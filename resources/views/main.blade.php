@@ -13,7 +13,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>World domination</title>
+        <title>{{env('APP_NAME', 'ww3.lol')}}</title>
 
         <!-- Fonts -->
         <link href="https://fonts.googleapis.com/css?family=Raleway:100,600" rel="stylesheet" type="text/css">
@@ -29,5 +29,6 @@
         </div>
 
         <script src="{{ mix('js/app.js') }}"></script>
+        @include('views.analytics')
     </body>
 </html>

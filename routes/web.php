@@ -4,7 +4,7 @@ Route::get('/', function () {
     return view('main');
 });
 
-Route::get('/import', 'InfoController@importEntries');
+Route::get('/import', 'InfoController@importData');
 // Route::get('/territories', 'InfoController@occupiedTerritories');
 Route::get('/territories', 'InfoController@territoriesWithBorders');
 

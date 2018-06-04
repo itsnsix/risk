@@ -1,7 +1,7 @@
 <template>
     <div class="main-outer">
         <div class="main-navbar">
-            <span>BATTORU</span>
+            <span>BATORU</span>
             <div class="help-toggle">?</div>
             <div class="navbar-toggle" @click="toggleEventMenu">
                 <div></div>

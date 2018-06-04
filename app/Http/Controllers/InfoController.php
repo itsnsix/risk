@@ -59,7 +59,7 @@ class InfoController extends Controller
     }
 
     // Find new data entries not yet imported and import them.
-    public function importEntries() {
+    public function importData() {
         $url = env('API_URL', null);
         if (!$url) {
             return response()->json('No url for data API set.', Response::HTTP_OK);
