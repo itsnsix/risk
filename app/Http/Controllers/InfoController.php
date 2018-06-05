@@ -65,6 +65,9 @@ class InfoController extends Controller
             return response()->json('No url for data API set.', Response::HTTP_OK);
         }
 
+        // TODO Set &from param based on highest data id previously loaded
+        // TODO  and &to param on a few hundred over that, so segment batch loads to prevent timeouts.
+
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -136,12 +139,12 @@ class InfoController extends Controller
             $territory = $this->findExpansion($user);
 
             $eventText = '<p>';
-            $eventText .= "<span style='color: $user->color'>$user->name</span>";
+            $eventText .= "<b style='color: $user->color'>$user->name</b>";
 
             // Set previous occupation to inactive if this occupation overtook someone.
             if ($territory->occupation) {
                 $eventText = " has taken (x: $territory->x, y: $territory->y) from " .
-                    "<span style='color: $existingOccupation->user->color'>$existingOccupation->user->name</span>!";
+                    "<b style='color: $territory->occupation->user->color'>$territory->occupation->user->name</b>!";
 
                 $previousOccupation = $territory->occupation;
                 $previousOccupation->active = false;
@@ -243,6 +246,15 @@ class InfoController extends Controller
         }
 
         return $territory;
+    }
+
+    public function eventIndex() {
+        $events = Event::query()
+            ->orderBy('created_at', 'DESC')
+            ->orderBy('id', 'DESC')
+            ->paginate(50);
+
+        return response()->json($events, Response::HTTP_OK);
     }
 
     // Set up functions, only used while setting up the map's territories and borders.

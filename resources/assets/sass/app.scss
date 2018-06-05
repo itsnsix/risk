@@ -90,9 +90,21 @@ html, body, #app, .main-outer {
 }
 
 .sidebar {
-  width: 300px;
+  width: 350px;
   display: flex;
   flex-direction: column;
+
+  .btn {
+    margin: 0 10px 10px 10px;
+    width: 313px;
+    background-color: #18424c;
+    border-color: #15343c;
+    color: #FFFFFF;
+
+    &:hover {
+      background-color: #1e6672;
+    }
+  }
 }
 
 .slide-menu-enter-active, .slide-menu-leave-active {
@@ -127,7 +139,7 @@ html, body, #app, .main-outer {
 
 .event {
   background-color: #282A2E;
-  margin: 15px 5px;
+  margin: 10px;
   padding: 10px 5px;
   font-size: 14px;
 }

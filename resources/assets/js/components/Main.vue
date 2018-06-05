@@ -46,8 +46,8 @@
                 <div class="sidebar" v-show="showMenu">
                     <div class="sidebar-header">Events</div>
 
-                    <div class="events">
-                        <div class="event" v-for="event in events">
+                    <div class="events" v-if="events && events.data && events.data.length > 0">
+                        <div class="event" v-for="event in events.data">
                             <div class="event-header">
                                 <div class="timestamp">{{event.timestamp}}</div>
                                 <div>
@@ -58,6 +58,8 @@
 
                             <div class="event-text" v-html="event.text"></div>
                         </div>
+
+                        <button v-if="events.next_page_url" @click="loadMoreEvents" class="btn">Load more</button>
                     </div>
                 </div>
             </transition>
@@ -73,7 +75,7 @@
 	    	return {
 			    status: 'Loading map...',
 			    territories: {},
-                events: [],
+                events: {data: []},
                 canvas: null,
                 context: null,
                 labels: [],
@@ -84,13 +86,26 @@
 
 	    mounted() {
 	    	axios.get('/territories')
-            .then((territories) => {
-            	this.territories = territories.data;
-	            this.setupMap();
-            });
+                .then(response => {
+                    this.territories = response.data;
+                    this.setupMap();
+                });
+
+            axios.get('/events')
+                .then(response => {
+                    this.events = response.data;
+                });
         },
 
 	    methods: {
+            loadMoreEvents: function() {
+                axios.get(this.events.next_page_url)
+                    .then(response => {
+                        response.data.data = this.events.data.concat(response.data.data);
+                        this.events = response.data;
+                    });
+            },
+
 		    formatDate: function(date) {
 		    	return Helpers.formatDate(date);
             },
