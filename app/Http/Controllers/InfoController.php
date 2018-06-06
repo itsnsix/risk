@@ -58,15 +58,38 @@ class InfoController extends Controller
             ->get()->keyBy('location');
     }
 
+    public function getDataUrl() {
+        $url = env('API_URL', null);
+        if (!$url) return null;
+
+        $from = 1;
+
+        $lastImport = Occupation::query()
+            ->select('api_data_id')
+            ->whereNotNull('api_data_id')
+            ->orderBy('api_data_id', 'DESC')->first();
+
+        if ($lastImport) {
+            $from = $lastImport->api_data_id + 1;
+        }
+
+        $url .= '?from=' . $from;
+
+        // Avoid loading huge batches of entries in one request.
+        $batchSize = env('DATA_BATCH_SIZE', 200);
+        if ($batchSize) {
+            $url .= '&to=' . ($from + $batchSize);
+        }
+
+        return $url;
+    }
+
     // Find new data entries not yet imported and import them.
     public function importData() {
-        $url = env('API_URL', null);
+        $url = $this->getDataUrl();
         if (!$url) {
             return response()->json('No url for data API set.', Response::HTTP_OK);
         }
-
-        // TODO Set &from param based on highest data id previously loaded
-        // TODO  and &to param on a few hundred over that, so segment batch loads to prevent timeouts.
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
