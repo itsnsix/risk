@@ -2,7 +2,10 @@
     <div class="main-outer">
         <div class="main-navbar">
             <span>BATORU</span>
-            <div class="help-toggle">?</div>
+
+            <!--<div class="help-toggle">?</div>-->
+            <div @click="toggleLabels" class="label-toggle">
+                <img :class="{active: showLabels}" class="user-label" src="/images/default_avatar.png"/></div>
             <div class="navbar-toggle" @click="toggleEventMenu">
                 <div></div>
                 <div></div>
@@ -20,6 +23,7 @@
                         <div class="close-popover" @click="closePopover">X</div>
                     </div>
                     <div class="popover-content">
+                        <u>Territory {{popover.territory.id}}</u>
                         <div>Captured: <b>{{formatDate(popover.territory.occupation.api_created_at)}}</b></div>
 
                         <div v-if="popover.territory.occupation.previous_occupation">Previous occupant: <b
@@ -35,10 +39,11 @@
 
                 <canvas @click="onMapClick" id="map" width="5644" height="2177"></canvas>
 
-                <div class="user-labels">
-                    <img class="user-label" :src="label.avatar" v-for="label in labels" :style="{
-                        top: label.y + 'px', left: label.x + 'px',
-                        height: label.size + 'px', width: label.size + 'px'}">
+                <div class="user-labels" v-show="showLabels">
+                    <img class="user-label" :src="label.avatar" v-for="label in labels"
+                         :id="'territory-' + label.territory.id"
+                         :style="{top: label.y + 'px', left: label.x + 'px',
+                            height: label.size + 'px', width: label.size + 'px'}">
                 </div>
             </div>
 
@@ -51,16 +56,24 @@
                             <div class="event-header">
                                 <div class="timestamp">{{event.timestamp}}</div>
                                 <div>
-                                    <img src="/images/picture.png"/>
-                                    <!--<img src="/images/sword.png"/>-->
+                                    <img v-if="event.extra && event.extra.territory_id"
+                                         @click="scrollToTerritory(event.extra.territory_id)" src="/images/binoculars.png"/>
+                                    <a v-if="event.extra && event.extra.source_url"
+                                       :href="event.extra.source_url" target="_blank">
+                                        <img src="/images/picture.png"/>
+                                    </a>
                                 </div>
                             </div>
 
                             <div class="event-text" v-html="event.text"></div>
                         </div>
 
-                        <button v-if="events.next_page_url" @click="loadMoreEvents" class="btn">Load more</button>
+                        <button v-if="events.next_page_url" @click="loadMoreEvents" class="btn" :disabled="loadingMoreEvents">
+                            {{loadingMoreEvents ? 'Loading...' : 'Load more'}}
+                        </button>
                     </div>
+                    <div v-else-if="loadingEvents" class="warning-label">Loading events...</div>
+                    <div class="warning-label" v-else>Whoops, seems nothing has happened here yet.</div>
                 </div>
             </transition>
         </div>
@@ -80,7 +93,10 @@
                 context: null,
                 labels: [],
 			    showMenu: false,
-			    popover: null
+			    popover: null,
+                showLabels: true,
+                loadingMoreEvents: false,
+                loadingEvents: true
 	    	}
 	    },
 
@@ -94,16 +110,56 @@
             axios.get('/events')
                 .then(response => {
                     this.events = response.data;
-                });
+                    this.loadingEvents = false;
+                })
+                .catch(response => {
+                    this.loadingEvents = false;
+                })
         },
 
 	    methods: {
+            toggleLabels: function() {
+                this.showLabels = !this.showLabels;
+            },
+
+	        scrollToTerritory: function(territoryID) {
+                let turnOffLabels = !this.showLabels;
+                this.showLabels = true; // Needs to be visible in order to scroll to them.
+                setTimeout(() => {
+                    let el = document.getElementById('territory-' + territoryID);
+                    if (el) {
+                        el.scrollIntoView({behavior: 'auto', block: 'center', inline: 'center'});
+
+                        this.labels.forEach(l => {
+                            if (l.territory.id === territoryID) {
+                                this.popover = {
+                                    territory: l.territory,
+                                    x: l.x - 125,
+                                    y: l.y + 15
+                                };
+                            }
+                        });
+                    } else {
+                        console.log('No label for this territory.')
+                    }
+
+                    if (turnOffLabels) this.showLabels = false;
+                });
+            },
+
             loadMoreEvents: function() {
-                axios.get(this.events.next_page_url)
-                    .then(response => {
-                        response.data.data = this.events.data.concat(response.data.data);
-                        this.events = response.data;
-                    });
+                if (!this.loadingMoreEvents) {
+                    this.loadingMoreEvents = true;
+                    axios.get(this.events.next_page_url)
+                        .then(response => {
+                            response.data.data = this.events.data.concat(response.data.data);
+                            this.events = response.data;
+                            this.loadingMoreEvents = false;
+                        })
+                        .catch(response => {
+                            this.loadingMoreEvents = false;
+                        });
+                }
             },
 
 		    formatDate: function(date) {
@@ -121,7 +177,7 @@
 		    onMapClick: function(event) {
                 // Show territory occupation if it exists.
 			    let t = this.findTerritory({x: event.layerX, y: event.layerY});
-			    if (t) {
+			    if (t && t.occupation) {
 				    this.popover = {
 				    	territory: t,
                         x: event.layerX - 125, // Remove half the width of popover to center it.
@@ -247,7 +303,7 @@
 		    	if (size < 10) size = 10;
 
 		    	this.labels.push({
-                    id: territory.id,
+                    territory: territory,
                     x: territory.x - (size / 2),
                     y: territory.y - (size / 2),
                     avatar: territory.occupation.user.image ? territory.occupation.user.image : '/images/default_avatar.png',

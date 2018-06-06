@@ -19,6 +19,15 @@ class Event extends Model
         }
     }
 
+    public function getExtraAttribute($value)
+    {
+        if ($value) {
+            return json_decode($value);
+        } else {
+            return null;
+        }
+    }
+
     public function user() {
         return $this->belongsTo(User::class);
     }

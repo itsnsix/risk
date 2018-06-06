@@ -54,11 +54,36 @@ html, body, #app, .main-outer {
   position: relative;
   user-select: none;
 
-  .help-toggle {
+  .label-toggle {
     position: absolute;
     top: 0;
     bottom: 0;
     right: 60px;
+    width: 60px;
+    border-left: 1px solid #C5C8C6;
+    user-select: none;
+    padding: 3px 0;
+    font-size: 32px;
+    cursor: pointer;
+
+    img {
+      height: 30px;
+      width: 30px;
+      border-radius: 15px;
+      opacity: 0.6;
+      transition: opacity .3s;
+    }
+
+    img.active {
+      opacity: 1;
+    }
+  }
+
+  .help-toggle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 120px;
     width: 60px;
     border-left: 1px solid #C5C8C6;
     user-select: none;
@@ -105,6 +130,11 @@ html, body, #app, .main-outer {
       background-color: #1e6672;
     }
   }
+
+  .warning-label {
+    text-align: center;
+    margin: 10px;
+  }
 }
 
 .slide-menu-enter-active, .slide-menu-leave-active {
@@ -147,7 +177,7 @@ html, body, #app, .main-outer {
 .timestamp {
   background-color: #33353A;
   padding: 2px 10px;
-  font-size: 10px;
+  font-size: 11px;
   border-radius: 10px;
   display: inline-block;
 }
@@ -239,5 +269,11 @@ html, body, #app, .main-outer {
     position: absolute;
     cursor: pointer;
     padding: 10px;
+    opacity: 0.6;
+    transition: opacity .3s;
+
+    &:hover {
+      opacity: 1;
+    }
   }
 }

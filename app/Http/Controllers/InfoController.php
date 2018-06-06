@@ -113,7 +113,7 @@ class InfoController extends Controller
                 // TODO Accept command for changing color.
                 // TODO Accept command for joining and leaving houses.
 
-                $this->expandTerritory($user, $entry['id'], Carbon::now());
+                $this->expandTerritory($user, $entry['id'], Carbon::now()); // TODO Swap now() with entry timestamp.
             }
         }
 
@@ -166,14 +166,14 @@ class InfoController extends Controller
 
             // Set previous occupation to inactive if this occupation overtook someone.
             if ($territory->occupation) {
-                $eventText = " has taken (x: $territory->x, y: $territory->y) from " .
+                $eventText = " has taken <b>T$territory->id.</b> from " .
                     "<b style='color: $territory->occupation->user->color'>$territory->occupation->user->name</b>!";
 
                 $previousOccupation = $territory->occupation;
                 $previousOccupation->active = false;
                 $previousOccupation->save();
             } else {
-                $eventText .= " has taken control of (x: $territory->x, y: $territory->y)!";
+                $eventText .= " has taken control of <b>T$territory->id.</b>";
             }
 
             // Create the occupation.
@@ -189,9 +189,17 @@ class InfoController extends Controller
             $eventText .= '</p>';
 
             // Create an event for the occupation
+            $extra = ['territory_id' => $territory->id];
+            $sourceUrl = env('ENTRY_SOURCE_URL', null);
+            if ($sourceUrl) {
+                $sourceUrl = str_replace('{id}', $dataID, $sourceUrl);
+                $extra['source_url'] = $sourceUrl;
+            }
+
             $event = new Event();
             $event->user_id = $user->id;
             $event->text = $eventText;
+            $event->extra = json_encode($extra);
             $event->save();
 
             return $occupation;
