@@ -8,12 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 class Event extends Model
 {
     protected $hidden = ['updated_at'];
-    protected $appends = ['timestamp'];
 
-    public function getTimestampAttribute()
+    public function getTimestampAttribute($value)
     {
-        if ($this->created_at) {
-            return Carbon::parse($this->created_at)->format('d/m/Y H:i');
+        if ($value) {
+            return Carbon::parse($value)->format('d/m/Y H:i');
         } else {
             return null;
         }

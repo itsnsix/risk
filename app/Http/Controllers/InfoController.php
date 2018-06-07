@@ -6,10 +6,10 @@ use App\Event;
 use App\Occupation;
 use App\Territory;
 use App\User;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Intervention\Image\Facades\Image;
 
 class InfoController extends Controller
 {
@@ -104,7 +104,7 @@ class InfoController extends Controller
         }
 
         foreach($entries as $entry) {
-            $user = $this->findOrCreateUser($entry['userId'], 'User ' . $entry['userId']);
+            $user = $this->findOrCreateUser($entry['user']);
 
             if (!$this->findImportedID($entry['id'])) {
                 // TODO Accept command for where to go.
@@ -113,7 +113,7 @@ class InfoController extends Controller
                 // TODO Accept command for changing color.
                 // TODO Accept command for joining and leaving houses.
 
-                $this->expandTerritory($user, $entry['id'], Carbon::now()); // TODO Swap now() with entry timestamp.
+                $this->expandTerritory($user, $entry['id'], $entry['created_at']);
             }
         }
 
@@ -138,14 +138,34 @@ class InfoController extends Controller
     }
 
     // Return user based on API user ID, create them if nonexistant.
-    public function findOrCreateUser($apiUserID, $name) {
-        $user = User::query()->where('api_user_id', '=', $apiUserID)->first();
+    public function findOrCreateUser($data) {
+        $id = $data['id'];
+        $name = $data['name'];
+        $avatar = $data['avatar'] && $data['avatar']['thumb'] ?  $data['avatar']['thumb']['url'] : null;
+        $user = User::query()->where('api_user_id', '=', $id)->first();
 
         if (!$user) {
             $user = new User();
-            $user->api_user_id = $apiUserID;
+            $user->api_user_id = $id;
             $user->name = $name;
             $user->color = $this->randomUniqueHexColor();
+            $user->save();
+        }
+
+        // Doesn't update a user who changes his avatar.
+        if ($avatar && !$user->image) {
+            $imagePath = '/images/avatars/' . $id . '-' . time();
+            $image = Image::make($avatar);
+            $ext = '';
+            switch($image->mime()) {
+                case 'image/gif': $ext = '.gif'; break;
+                case 'image/jpeg': $ext = '.jpg'; break;
+                case 'image/png': $ext = '.png'; break;
+                default: $ext = '.jpg';
+            }
+
+            $image->save(public_path($imagePath . $ext));
+            $user->image = $imagePath . $ext;
             $user->save();
         }
 
@@ -200,6 +220,7 @@ class InfoController extends Controller
             $event->user_id = $user->id;
             $event->text = $eventText;
             $event->extra = json_encode($extra);
+            $event->timestamp = $submittedAt;
             $event->save();
 
             return $occupation;
