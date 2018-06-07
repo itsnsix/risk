@@ -177,7 +177,6 @@
 		    onMapClick: function(event) {
                 // Show territory occupation if it exists.
 			    let t = this.findTerritory({x: event.layerX, y: event.layerY});
-			    console.log(t.id);
 			    if (t && t.occupation) {
 				    this.popover = {
 				    	territory: t,
