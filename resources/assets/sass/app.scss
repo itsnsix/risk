@@ -19,6 +19,13 @@ html, body, #app, .main-outer {
   height: 100%;
 }
 
+.dragscroll {
+  cursor: move;
+  cursor: grab;
+  cursor: -moz-grab;
+  cursor: -webkit-grab;
+}
+
 .loading {
   padding: 25px;
   font-size: 14px;

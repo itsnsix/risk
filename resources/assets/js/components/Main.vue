@@ -14,7 +14,7 @@
         </div>
 
         <div class="main">
-            <div class="map-container">
+            <div class="map-container dragscroll">
                 <div class="territory-popover" v-if="popover"
                      :style="{'top': popover.y + 'px', 'left': popover.x + 'px'}">
                     <div class="popover-title" :style="{'background-color': popover.territory.occupation.user.color}">

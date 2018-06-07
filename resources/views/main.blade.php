@@ -28,6 +28,7 @@
             <main-page></main-page>
         </div>
 
+        <script src="{{ mix('js/vendor.js') }}"></script>
         <script src="{{ mix('js/app.js') }}"></script>
         @include('analytics')
     </body>
