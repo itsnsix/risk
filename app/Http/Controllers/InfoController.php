@@ -186,8 +186,9 @@ class InfoController extends Controller
 
             // Set previous occupation to inactive if this occupation overtook someone.
             if ($territory->occupation) {
-                $eventText = " has taken <b>T$territory->id.</b> from " .
-                    "<b style='color: $territory->occupation->user->color'>$territory->occupation->user->name</b>!";
+                $lastUser = $territory->occupation->user;
+                $eventText .= " has taken <b>T$territory->id</b> from " .
+                    "<b style='color: $lastUser->color'>$lastUser->name</b>.";
 
                 $previousOccupation = $territory->occupation;
                 $previousOccupation->active = false;
