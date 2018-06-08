@@ -105,6 +105,9 @@
                 .then(response => {
                     this.territories = response.data;
                     this.setupMap();
+                })
+                .catch(response => {
+                    this.status = 'Failed to load map.';
                 });
 
             axios.get('/events')
@@ -114,7 +117,7 @@
                 })
                 .catch(response => {
                     this.loadingEvents = false;
-                })
+                });
         },
 
 	    methods: {

@@ -9,6 +9,7 @@ use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Intervention\Image\Facades\Image;
 
 class InfoController extends Controller
@@ -107,24 +108,100 @@ class InfoController extends Controller
             $user = $this->findOrCreateUser($entry['user']);
 
             if (!$this->findImportedID($entry['id'])) {
-                // TODO Accept command for where to go.
-                // TODO Accept command for who to attack.
-                // TODO Accept command for new starting position.
-                // TODO Accept command for changing color.
-                // TODO Accept command for joining and leaving houses.
+                $direction = 'RANDOM';
 
-                $this->expandTerritory($user, $entry['id'], $entry['created_at']);
+                $commands = isset($entry['api_command']) ? $entry['api_command'] : null;
+                if ($commands) {
+                    // Structure: 'MOVE:NORTH,COLOR:#23E4DF'
+                    $commands = explode(',', $commands);
+
+                    foreach($commands as $command) {
+                        $command = explode(':', $command);
+                        if (count($command) === 2) { // Ignore commands not properly formatted
+                            $action = strtoupper($command[0]);
+                            $value = $command[1];
+
+                            switch($action) {
+                                case 'MOVE': $direction = strtoupper($value); break;
+                                case 'COLOR': $user = $this->changeUserColor($user, $value, $entry['created_at']); break;
+                                case 'START': $user = $this->changeUserStartingPosition($user, $value, $entry['created_at']); break;
+                                case 'JOIN': $user = $this->changeUserHouse($user, $value); break;
+                                case 'LEAVE': $user = $this->changeUserHouse($user, null); break;
+                            }
+                        }
+                    }
+                }
+
+                $this->expandTerritory($user, $entry['id'], $entry['created_at'], $direction);
             }
         }
 
         return response()->json('OK', Response::HTTP_OK);
     }
 
+    public function changeUserHouse($user, $house) {
+        // TODO Create house if it doesn't exist and add the user to it.
+        // House can be null, in which case the user leaves his current house (if any).
+        return $user;
+    }
+
+    public function changeUserColor($user, $color, $submittedAt) {
+        preg_match_all("/^#(?>[a-fA-F0-9]{6}){1,2}$/", $color, $matches);
+        if ($matches && count($matches[0]) > 0) {
+            $color = strtoupper($matches[0][0]);
+
+            if (User::query()->where('color', $color)->exists()) {
+                Log::info('Duplicate color change: ' . $user->name . ' -> ' . $color);
+                return $user;
+            }
+
+            $eventText = "<p><b style='color: $user->color'>$user->name</b>"
+                . " has changed their color to <b style='color: $color'>$color</b>.</p>";
+
+            $user->color = $color;
+            $user->save();
+
+            $event = new Event();
+            $event->user_id = $user->id;
+            $event->text = $eventText;
+            $event->timestamp = $submittedAt;
+            $event->save();
+
+            return $user;
+        } else {
+            Log::info('Failed color change: ' . $user->name . ' -> ' . $color);
+            return $user;
+        }
+    }
+
+    public function changeUserStartingPosition($user, $territoryID, $submittedAt) {
+        $territory = Territory::find($territoryID);
+
+        if ($territory) {
+            $eventText = "<p><b style='color: $user->color'>$user->name</b>"
+                . " has set their starting point to <b>T$territoryID</b>.</p>";
+
+            $user->starting_territory = $territoryID;
+            $user->save();
+
+            $event = new Event();
+            $event->user_id = $user->id;
+            $event->text = $eventText;
+            $event->timestamp = $submittedAt;
+            $event->save();
+
+            return $user;
+        } else {
+            Log::info('Failed starting position change: ' . $user->name . ' -> ' . $territoryID);
+            return $user;
+        }
+    }
+
     // Find a new unique user color (as hex).
     public function randomUniqueHexColor() {
         $color = '#' . strtoupper(dechex(rand(0x000000, 0xFFFFFF)));
 
-        $user = User::query()->where('color', '=', $color)->first();
+        $user = User::query()->where('color', '=', $color)->exists();
 
         // #18424C ocean color.
         // #000000 border color.
@@ -173,7 +250,9 @@ class InfoController extends Controller
     }
 
     // Expand a user's territory.
-    public function expandTerritory($user, $dataID, $submittedAt) {
+    public function expandTerritory($user, $dataID, $submittedAt, $direction) {
+        // TODO Handle expansion directions (NULL,RANDOM,N,S,W,E,NORTH,SOUTH,WEST,EAST).
+
         $existingOccupation = Occupation::query()
             ->where('api_data_id', '=', $dataID)
             ->first();
