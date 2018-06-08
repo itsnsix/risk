@@ -125,6 +125,7 @@ class InfoController extends Controller
                                 case 'MOVE': $direction = strtoupper($value); break;
                                 case 'COLOR': $user = $this->changeUserColor($user, $value, $entry['created_at']); break;
                                 case 'START': $user = $this->changeUserStartingPosition($user, $value, $entry['created_at']); break;
+                                case 'AVATAR': $user = $this->updateUserAvatar($user, $entry['user']); break;
                                 case 'JOIN': $user = $this->changeUserHouse($user, $value); break;
                                 case 'LEAVE': $user = $this->changeUserHouse($user, null); break;
                             }
@@ -137,6 +138,29 @@ class InfoController extends Controller
         }
 
         return response()->json('OK', Response::HTTP_OK);
+    }
+
+    public function updateUserAvatar($user, $userIn) {
+        $avatar = $userIn['avatar'] && $userIn['avatar']['thumb'] ?  $userIn['avatar']['thumb']['url'] : null;
+        if (!$avatar) {
+            return $user;
+        }
+
+        $imagePath = '/images/avatars/' . $user->id . '-' . time();
+        $image = Image::make($avatar);
+        $ext = '';
+        switch($image->mime()) {
+            case 'image/gif': $ext = '.gif'; break;
+            case 'image/jpeg': $ext = '.jpg'; break;
+            case 'image/png': $ext = '.png'; break;
+            default: $ext = '.jpg';
+        }
+
+        $image->save(public_path($imagePath . $ext));
+        $user->image = $imagePath . $ext;
+        $user->save();
+
+        return $user;
     }
 
     public function changeUserHouse($user, $house) {
