@@ -128,7 +128,7 @@
                 setTimeout(() => {
                     let el = document.getElementById('territory-' + territoryID);
                     if (el) {
-                        el.scrollIntoView({behavior: 'auto', block: 'center', inline: 'center'});
+                        el.scrollIntoView({behavior: 'smooth', block: 'center', inline: 'center'});
 
                         this.labels.forEach(l => {
                             if (l.territory.id === territoryID) {
