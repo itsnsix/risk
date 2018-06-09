@@ -38,7 +38,6 @@ class ImportData extends Command
      */
     public function handle()
     {
-        $response = app('App\Http\Controllers\InfoController')->importData();
-        Log::info('Import routine ran: ' . $response);
+        return app('App\Http\Controllers\InfoController')->importData();
     }
 }
