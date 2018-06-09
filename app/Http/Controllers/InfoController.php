@@ -6,11 +6,11 @@ use App\Event;
 use App\Occupation;
 use App\Territory;
 use App\User;
+use finfo;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Intervention\Image\Facades\Image;
 
 class InfoController extends Controller
 {
@@ -101,8 +101,10 @@ class InfoController extends Controller
         $entries = json_decode($result, true);
 
         if (!$entries) {
-            return response()->json('No entries found.', Response::HTTP_OK);
+            return response()->json(['result' => 'No new entries found.'], Response::HTTP_OK);
         }
+
+        $importCount = 0;
 
         foreach($entries as $entry) {
             $user = $this->findOrCreateUser($entry['user']);
@@ -135,9 +137,12 @@ class InfoController extends Controller
 
                 $this->expandTerritory($user, $entry['id'], $entry['created_at'], $direction);
             }
+            $importCount++;
         }
 
-        return response()->json('OK', Response::HTTP_OK);
+        return response()->json(['result' => 'Imported ' . $importCount .
+            ($importCount === 1 ? ' new entry!' : ' new entries!')],
+            Response::HTTP_OK);
     }
 
     public function updateUserAvatar($user, $userIn) {
@@ -146,17 +151,19 @@ class InfoController extends Controller
             return $user;
         }
 
-        $imagePath = '/images/avatars/' . $user->id . '-' . time();
-        $image = Image::make($avatar);
-        $ext = '';
-        switch($image->mime()) {
+        $image = file_get_contents($avatar);
+
+        $fileInfo = new finfo(FILEINFO_MIME_TYPE);
+        $mime = $fileInfo->buffer($image);
+        switch($mime) {
             case 'image/gif': $ext = '.gif'; break;
             case 'image/jpeg': $ext = '.jpg'; break;
             case 'image/png': $ext = '.png'; break;
             default: $ext = '.jpg';
         }
 
-        $image->save(public_path($imagePath . $ext));
+        $imagePath = '/images/avatars/' . $user->id . '-' . time();
+        file_put_contents(public_path($imagePath . $ext), $image);
         $user->image = $imagePath . $ext;
         $user->save();
 
@@ -255,17 +262,19 @@ class InfoController extends Controller
 
         // Doesn't update a user who changes his avatar.
         if ($avatar && !$user->image) {
-            $imagePath = '/images/avatars/' . $id . '-' . time();
-            $image = Image::make($avatar);
-            $ext = '';
-            switch($image->mime()) {
+            $image = file_get_contents($avatar);
+
+            $fileInfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = $fileInfo->buffer($image);
+            switch($mime) {
                 case 'image/gif': $ext = '.gif'; break;
                 case 'image/jpeg': $ext = '.jpg'; break;
                 case 'image/png': $ext = '.png'; break;
                 default: $ext = '.jpg';
             }
 
-            $image->save(public_path($imagePath . $ext));
+            $imagePath = '/images/avatars/' . $id . '-' . time();
+            file_put_contents(public_path($imagePath . $ext), $image);
             $user->image = $imagePath . $ext;
             $user->save();
         }

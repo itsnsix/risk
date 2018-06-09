@@ -240,7 +240,10 @@
             },
 
             findTerritory: function(location) {
+                if (!this.context) {return null;}
 	            let imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
+	            if (!imageData) {return null;}
+
 	            let color = Helpers.hexToRgb('#18424C'); // Reserved ocean color
 	            let coloredPixels = 0;
 
