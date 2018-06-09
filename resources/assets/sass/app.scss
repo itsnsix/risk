@@ -159,12 +159,16 @@ html, body, #app, .main-outer {
 
 .sidebar .sidebar-header {
   text-align: center;
-  border-bottom: rgba(0, 0, 0, 0.3);
   font-size: 16px;
   padding: 10px 0;
   border-bottom: 5px solid #282A2E;
   user-select: none;
 }
+
+.sidebar .sidebar-header.second-header {
+  border-top: 5px solid #282A2E;
+}
+
 
 .map-container {
   flex: 1;
@@ -280,6 +284,61 @@ html, body, #app, .main-outer {
 
     &:hover {
       opacity: 1;
+    }
+  }
+}
+
+.sidebar .vue-easy-pie-chart {
+  > .inner-text {
+    margin: 0;
+    line-height: inherit !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+
+    p {
+      margin: 0;
+    }
+
+    .pie-percentage {
+      font-size: 20px;
+    }
+
+    .pie-subtitle {
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+  }
+}
+
+.sidebar .stat-container {
+  display: flex;
+  padding: 10px 0;
+
+  > div {
+    flex: 1;
+  }
+
+  table {
+    margin: 0;
+
+    tr {
+      display: flex;
+
+      td {
+        border: 0;
+        padding: 7px 0;
+        width: 85px;
+        display: flex;
+
+        span {
+          text-overflow: ellipsis;
+          overflow: hidden;
+          line-height: 20px;
+          height: 20px;
+        }
+      }
     }
   }
 }

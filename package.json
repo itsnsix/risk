@@ -20,6 +20,7 @@
         "vue": "^2.5.7"
     },
     "dependencies": {
-        "dragscroll": "^0.0.8"
+        "dragscroll": "^0.0.8",
+        "vue-easy-pie-chart": "^1.0.3"
     }
 }

@@ -7,6 +7,7 @@ Route::get('/', function () {
 Route::get('/import', 'InfoController@importData');
 Route::get('/territories', 'InfoController@occupiedTerritories');
 Route::get('/events', 'InfoController@eventIndex');
+Route::get('/stats', 'InfoController@statsIndex');
 
 // Setup routes.
 // Route::post('/territories', 'InfoController@createTerritory');

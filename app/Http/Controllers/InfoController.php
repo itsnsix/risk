@@ -404,6 +404,7 @@ class InfoController extends Controller
         return $territory;
     }
 
+    // Paginated list of all events available.
     public function eventIndex() {
         $events = Event::query()
             ->orderBy('created_at', 'DESC')
@@ -412,8 +413,6 @@ class InfoController extends Controller
 
         return response()->json($events, Response::HTTP_OK);
     }
-
-    // Set up functions, only used while setting up the map's territories and borders.
 
     // Create a new territory
     public function createTerritory(Request $request) {
@@ -447,5 +446,53 @@ class InfoController extends Controller
         $syncResult = $territory->borders()->sync($request->input('border_ids'));
 
         return response()->json(['result' => $syncResult], $syncResult ? Response::HTTP_OK : Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    // General stats for the site.
+    public function statsIndex() {
+        $totalTerritoryCount = Territory::query()->count();
+        $totalOccupationCount = Occupation::query()->where('active', true)->count();
+        $occupation = (float) number_format($totalOccupationCount / $totalTerritoryCount * 100, 1);
+
+        $firstOccupation = Occupation::query()
+            ->selectRaw('DATEDIFF(DATE(NOW()), DATE(api_created_at)) as days_since')
+            ->orderBy('api_created_at', 'ASC')->first();
+        if ($firstOccupation) {
+            $day = $firstOccupation->days_since + 1;
+        } else {
+            $day = 0;
+        }
+
+        $angriest = User::query()
+            ->selectRaw('users.*, COUNT(user_id) as take_overs')
+            ->join('occupations', 'occupations.user_id', '=', 'users.id')
+            ->whereNotNull('previous_occupation')
+            ->groupBy('user_id')
+            ->orderBy('take_overs', 'DESC')
+            ->first();
+
+        $biggest = User::query()
+            ->selectRaw('users.*, SUM(size) as total_size')
+            ->join('occupations', 'occupations.user_id', '=', 'users.id')
+            ->join('territories', 'territories.id', '=', 'occupations.territory_id')
+            ->groupBy('user_id')
+            ->orderBy('total_size', 'DESC')
+            ->first();
+
+        $highestCount = User::query()
+            ->selectRaw('users.*, COUNT(user_id) as occupations')
+            ->join('occupations', 'occupations.user_id', '=', 'users.id')
+            ->groupBy('user_id')
+            ->where('active', true)
+            ->orderBy('occupations', 'DESC')
+            ->first();
+
+        return response()->json([
+            'occupied_percentage' => $occupation,
+            'day' => $day,
+            'angriest' => $angriest,
+            'biggest' => $biggest,
+            'highest_count' => $highestCount
+        ], Response::HTTP_OK);
     }
 }

@@ -49,7 +49,39 @@
 
             <transition name="slide-menu">
                 <div class="sidebar" v-show="showMenu">
-                    <div class="sidebar-header">Events</div>
+                    <div class="sidebar-header">Day {{stats ? stats.day : '-'}}</div>
+                    <div class="stat-container" v-if="stats">
+                        <div>
+                            <vue-easy-pie-chart line-cap="butt" track-color="#282A2E" bar-color="#C5C8C6" :line-width="5"
+                                                :percent="stats.occupied_percentage">
+                                <p class="pie-percentage">{{stats.occupied_percentage}}%</p>
+                                <p class="pie-subtitle">Conquered</p>
+                            </vue-easy-pie-chart>
+                        </div>
+                        <div>
+                            <table class="table">
+                                <tbody>
+                                <tr v-if="stats.highest_count">
+                                    <td>Conqueror</td>
+                                    <td><span><b :style="'color: ' + stats.highest_count.color">{{stats.highest_count.name}}</b></span></td>
+                                </tr>
+                                <tr v-if="stats.biggest">
+                                    <td>Biggest</td>
+                                    <td><span><b :style="'color: ' + stats.biggest.color">{{stats.biggest.name}}</b></span></td>
+                                </tr>
+                                <tr v-if="stats.angriest">
+                                    <td>Angriest</td>
+                                    <td><span><b :style="'color: ' + stats.angriest.color">{{stats.angriest.name}}</b></span></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div v-else>
+                        <div class="warning-label">Loading stats...</div>
+                    </div>
+
+                    <div class="sidebar-header second-header">Event log</div>
 
                     <div class="events" v-if="events && events.data && events.data.length > 0">
                         <div class="event" v-for="event in events.data">
@@ -82,8 +114,13 @@
 
 <script>
     import Helpers from '../helpers';
+    import VueEasyPieChart from 'vue-easy-pie-chart';
 
     export default {
+        components:{
+            VueEasyPieChart
+        },
+
 	    data() {
 	    	return {
 			    status: 'Loading map...',
@@ -92,11 +129,13 @@
                 canvas: null,
                 context: null,
                 labels: [],
-			    showMenu: false,
+                showMenu: false,
 			    popover: null,
                 showLabels: true,
                 loadingMoreEvents: false,
-                loadingEvents: true
+                loadingEvents: true,
+                loadingStats: true,
+                stats: null
 	    	}
 	    },
 
@@ -117,6 +156,15 @@
                 })
                 .catch(response => {
                     this.loadingEvents = false;
+                });
+
+            axios.get('/stats')
+                .then(response => {
+                    this.stats = response.data;
+                    this.loadingStats = false;
+                })
+                .catch(response => {
+                    this.loadingStats = false;
                 });
         },
 
