@@ -125,11 +125,11 @@ class InfoController extends Controller
 
                             switch($action) {
                                 case 'MOVE': $direction = strtoupper($value); break;
-                                case 'COLOR': $user = $this->changeUserColor($user, $value, $entry['created_at']); break;
-                                case 'START': $user = $this->changeUserStartingPosition($user, $value, $entry['created_at']); break;
-                                case 'AVATAR': $user = $this->updateUserAvatar($user, $entry['user']); break;
-                                case 'JOIN': $user = $this->changeUserHouse($user, $value); break;
-                                case 'LEAVE': $user = $this->changeUserHouse($user, null); break;
+                                case 'COLOR': $user->changeColor($value, $entry['created_at']); break;
+                                case 'START': $user->changeStartingPosition($value, $entry['created_at']); break;
+                                case 'AVATAR': $user->updateAvatar($entry['user']); break;
+                                case 'JOIN': $user->changeHouse($value); break;
+                                case 'LEAVE': $user->changeHouse(null); break;
                             }
                         }
                     }
@@ -143,89 +143,6 @@ class InfoController extends Controller
         return response()->json(['result' => 'Imported ' . $importCount .
             ($importCount === 1 ? ' new entry!' : ' new entries!')],
             Response::HTTP_OK);
-    }
-
-    public function updateUserAvatar($user, $userIn) {
-        $avatar = $userIn['avatar'] && $userIn['avatar']['thumb'] ?  $userIn['avatar']['thumb']['url'] : null;
-        if (!$avatar) {
-            return $user;
-        }
-
-        $image = file_get_contents($avatar);
-
-        $fileInfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime = $fileInfo->buffer($image);
-        switch($mime) {
-            case 'image/gif': $ext = '.gif'; break;
-            case 'image/jpeg': $ext = '.jpg'; break;
-            case 'image/png': $ext = '.png'; break;
-            default: $ext = '.jpg';
-        }
-
-        $imagePath = '/images/avatars/' . $user->id . '-' . time();
-        file_put_contents(public_path($imagePath . $ext), $image);
-        $user->image = $imagePath . $ext;
-        $user->save();
-
-        return $user;
-    }
-
-    public function changeUserHouse($user, $house) {
-        // TODO Create house if it doesn't exist and add the user to it.
-        // House can be null, in which case the user leaves his current house (if any).
-        return $user;
-    }
-
-    public function changeUserColor($user, $color, $submittedAt) {
-        preg_match_all("/^#(?>[a-fA-F0-9]{6}){1,2}$/", $color, $matches);
-        if ($matches && count($matches[0]) > 0) {
-            $color = strtoupper($matches[0][0]);
-
-            if (User::query()->where('color', $color)->exists()) {
-                Log::info('Duplicate color change: ' . $user->name . ' -> ' . $color);
-                return $user;
-            }
-
-            $eventText = "<p><b style='color: $user->color'>$user->name</b>"
-                . " has changed their color to <b style='color: $color'>$color</b>.</p>";
-
-            $user->color = $color;
-            $user->save();
-
-            $event = new Event();
-            $event->user_id = $user->id;
-            $event->text = $eventText;
-            $event->timestamp = $submittedAt;
-            $event->save();
-
-            return $user;
-        } else {
-            Log::info('Failed color change: ' . $user->name . ' -> ' . $color);
-            return $user;
-        }
-    }
-
-    public function changeUserStartingPosition($user, $territoryID, $submittedAt) {
-        $territory = Territory::find($territoryID);
-
-        if ($territory) {
-            $eventText = "<p><b style='color: $user->color'>$user->name</b>"
-                . " has set their starting point to <b>T$territoryID</b>.</p>";
-
-            $user->starting_territory = $territoryID;
-            $user->save();
-
-            $event = new Event();
-            $event->user_id = $user->id;
-            $event->text = $eventText;
-            $event->timestamp = $submittedAt;
-            $event->save();
-
-            return $user;
-        } else {
-            Log::info('Failed starting position change: ' . $user->name . ' -> ' . $territoryID);
-            return $user;
-        }
     }
 
     // Find a new unique user color (as hex).
