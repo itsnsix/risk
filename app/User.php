@@ -96,4 +96,30 @@ class User extends Model
         // House can be null, in which case the user leaves his current house (if any).
         return false;
     }
+
+    // Find a territory a user with no existing territories can start at.
+    public function findStartingSpot() {
+        $territory = null;
+
+        if ($this->starting_territory) {
+            $territory = Territory::query()
+                ->where('id', '=', $this->starting_territory)
+                ->whereDoesntHave('occupation')->first();
+        }
+
+        if (!$territory) {
+            $territory = Territory::query()
+                ->whereDoesntHave('occupation')->inRandomOrder()->first();
+        }
+
+        // User doesn't have a starting position set, or it's taken.
+        if (!$territory) {
+            $lastTerritoryID = Territory::query()->orderBy('id', 'DESC')->first()->id;
+            $id = rand(1, $lastTerritoryID);
+
+            $territory = Territory::find($id); // No more unclaimed territory.
+        }
+
+        return $territory;
+    }
 }

@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Event;
+use App\Helpers\Helper;
 use App\Occupation;
 use App\Territory;
 use App\User;
-use finfo;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -59,35 +59,9 @@ class InfoController extends Controller
             ->get()->keyBy('location');
     }
 
-    public function getDataUrl() {
-        $url = env('API_URL', null);
-        if (!$url) return null;
-
-        $from = 1;
-
-        $lastImport = Occupation::query()
-            ->select('api_data_id')
-            ->whereNotNull('api_data_id')
-            ->orderBy('api_data_id', 'DESC')->first();
-
-        if ($lastImport) {
-            $from = $lastImport->api_data_id + 1;
-        }
-
-        $url .= '?from=' . $from;
-
-        // Avoid loading huge batches of entries in one request.
-        $batchSize = env('DATA_BATCH_SIZE', 200);
-        if ($batchSize) {
-            $url .= '&to=' . ($from + $batchSize);
-        }
-
-        return $url;
-    }
-
     // Find new data entries not yet imported and import them.
     public function importData() {
-        $url = $this->getDataUrl();
+        $url = Helper::getDataUrl();
         if (!$url) {
             return response()->json('No url for data API set.', Response::HTTP_OK);
         }
@@ -107,10 +81,11 @@ class InfoController extends Controller
         $importCount = 0;
 
         foreach($entries as $entry) {
-            $user = $this->findOrCreateUser($entry['user']);
+            $user = Helper::findOrCreateUser($entry['user']);
 
-            if (!$this->findImportedID($entry['id'])) {
+            if (!Helper::findImportedID($entry['id'])) {
                 $direction = 'RANDOM';
+                $territoryID = null;
 
                 $commands = isset($entry['api_command']) ? $entry['api_command'] : null;
                 if ($commands) {
@@ -125,6 +100,7 @@ class InfoController extends Controller
 
                             switch($action) {
                                 case 'MOVE': $direction = strtoupper($value); break;
+                                case 'TAKE': $territoryID = $value; break;
                                 case 'COLOR': $user->changeColor($value, $entry['created_at']); break;
                                 case 'START': $user->changeStartingPosition($value, $entry['created_at']); break;
                                 case 'AVATAR': $user->updateAvatar($entry['user']); break;
@@ -135,9 +111,9 @@ class InfoController extends Controller
                     }
                 }
 
-                $this->expandTerritory($user, $entry['id'], $entry['created_at'], $direction);
+                $this->expandTerritory($user, $entry['id'], $entry['created_at'], $direction, $territoryID);
+                $importCount++;
             }
-            $importCount++;
         }
 
         return response()->json(['result' => 'Imported ' . $importCount .
@@ -145,129 +121,61 @@ class InfoController extends Controller
             Response::HTTP_OK);
     }
 
-    // Find a new unique user color (as hex).
-    public function randomUniqueHexColor() {
-        $color = '#' . strtoupper(dechex(rand(0x000000, 0xFFFFFF)));
-
-        $user = User::query()->where('color', '=', $color)->exists();
-
-        // #18424C ocean color.
-        // #000000 border color.
-        // #99d9EA transport color.
-        if ($user || strlen($color) !== 7 || in_array($color, ['#18424C', '#000000', '#99d9EA'])) {
-            // Inf. loop if more users than there are hex colors.
-            return $this->randomUniqueHexColor();
-        } else {
-            return $color;
-        }
-    }
-
-    // Return user based on API user ID, create them if nonexistant.
-    public function findOrCreateUser($data) {
-        $id = $data['id'];
-        $name = $data['name'];
-        $avatar = $data['avatar'] && $data['avatar']['thumb'] ?  $data['avatar']['thumb']['url'] : null;
-        $user = User::query()->where('api_user_id', '=', $id)->first();
-
-        if (!$user) {
-            $user = new User();
-            $user->api_user_id = $id;
-            $user->name = $name;
-            $user->color = $this->randomUniqueHexColor();
-            $user->save();
-        }
-
-        // Doesn't update a user who changes his avatar.
-        if ($avatar && !$user->image) {
-            $image = file_get_contents($avatar);
-
-            $fileInfo = new finfo(FILEINFO_MIME_TYPE);
-            $mime = $fileInfo->buffer($image);
-            switch($mime) {
-                case 'image/gif': $ext = '.gif'; break;
-                case 'image/jpeg': $ext = '.jpg'; break;
-                case 'image/png': $ext = '.png'; break;
-                default: $ext = '.jpg';
-            }
-
-            $imagePath = '/images/avatars/' . $id . '-' . time();
-            file_put_contents(public_path($imagePath . $ext), $image);
-            $user->image = $imagePath . $ext;
-            $user->save();
-        }
-
-        return $user;
-    }
-
     // Expand a user's territory.
-    public function expandTerritory($user, $dataID, $submittedAt, $direction) {
-        // TODO Handle expansion directions (NULL,RANDOM,N,S,W,E,NORTH,SOUTH,WEST,EAST).
+    public function expandTerritory($user, $dataID, $submittedAt, $direction, $territoryID) {
+        $territory = $this->findExpansion($user, $direction, $territoryID);
 
-        $existingOccupation = Occupation::query()
-            ->where('api_data_id', '=', $dataID)
-            ->first();
+        $eventText = '<p>';
+        $eventText .= "<b style='color: $user->color'>$user->name</b>";
 
-        if (!$existingOccupation) {
-            $territory = $this->findExpansion($user);
+        // Set previous occupation to inactive if this occupation overtook someone.
+        if ($territory->occupation) {
+            $lastUser = $territory->occupation->user;
+            $eventText .= " has taken <b>T$territory->id</b> from " .
+                "<b style='color: $lastUser->color'>$lastUser->name</b>.";
 
-            $eventText = '<p>';
-            $eventText .= "<b style='color: $user->color'>$user->name</b>";
-
-            // Set previous occupation to inactive if this occupation overtook someone.
-            if ($territory->occupation) {
-                $lastUser = $territory->occupation->user;
-                $eventText .= " has taken <b>T$territory->id</b> from " .
-                    "<b style='color: $lastUser->color'>$lastUser->name</b>.";
-
-                $previousOccupation = $territory->occupation;
-                $previousOccupation->active = false;
-                $previousOccupation->save();
-            } else {
-                $eventText .= " has taken control of <b>T$territory->id.</b>";
-            }
-
-            // Create the occupation.
-            $occupation = new Occupation();
-            $occupation->user_id = $user->id;
-            $occupation->active = true;
-            $occupation->api_data_id = $dataID;
-            $occupation->api_created_at = $submittedAt;
-            $occupation->territory_id = $territory->id;
-            $occupation->previous_occupation = $territory->occupation ? $territory->occupation->id : null;
-            $occupation->save();
-
-            $eventText .= '</p>';
-
-            // Create an event for the occupation
-            $extra = ['territory_id' => $territory->id];
-            $sourceUrl = env('ENTRY_SOURCE_URL', null);
-            if ($sourceUrl) {
-                $sourceUrl = str_replace('{id}', $dataID, $sourceUrl);
-                $extra['source_url'] = $sourceUrl;
-            }
-
-            $event = new Event();
-            $event->user_id = $user->id;
-            $event->text = $eventText;
-            $event->extra = json_encode($extra);
-            $event->timestamp = $submittedAt;
-            $event->save();
-
-            return $occupation;
+            $previousOccupation = $territory->occupation;
+            $previousOccupation->active = false;
+            $previousOccupation->save();
         } else {
-            return $existingOccupation;
+            $eventText .= " has taken control of <b>T$territory->id.</b>";
         }
-    }
 
-    // Check if a data entry has been imported before.
-    public function findImportedID($id) {
-        return Occupation::query()
-            ->where('api_data_id', '=', $id)
-            ->first();
+        // Create the occupation.
+        $occupation = new Occupation();
+        $occupation->user_id = $user->id;
+        $occupation->active = true;
+        $occupation->api_data_id = $dataID;
+        $occupation->api_created_at = $submittedAt;
+        $occupation->territory_id = $territory->id;
+        $occupation->previous_occupation = $territory->occupation ? $territory->occupation->id : null;
+        $occupation->save();
+
+        $eventText .= '</p>';
+
+        // Create an event for the occupation
+        $extra = ['territory_id' => $territory->id];
+        $sourceUrl = env('ENTRY_SOURCE_URL', null);
+        if ($sourceUrl) {
+            $sourceUrl = str_replace('{id}', $dataID, $sourceUrl);
+            $extra['source_url'] = $sourceUrl;
+        }
+
+        $event = new Event();
+        $event->user_id = $user->id;
+        $event->text = $eventText;
+        $event->extra = json_encode($extra);
+        $event->timestamp = $submittedAt;
+        $event->save();
+
+        return $occupation;
     }
 
     // Find a territory for the user to expand to.
-    public function findExpansion($user) {
+    public function findExpansion($user, $direction, $territoryID) {
+        // TODO Handle expansion directions (NULL,RANDOM,N,S,W,E,NORTH,SOUTH,WEST,EAST).
+        // TODO Handle specific ID provided.
+
         $territories = Territory::query()
             ->whereHas('occupation', function ($query) use ($user) {
                 $query->where('user_id', '=', $user->id);
@@ -276,7 +184,7 @@ class InfoController extends Controller
             ->get();
 
         if (!$territories->count()) {
-            return $this->findStartingSpot($user);
+            return $user->findStartingSpot();
         } else {
             $borders = [];
 
@@ -303,31 +211,6 @@ class InfoController extends Controller
                 return $borders[array_rand($borders)];
             }
         }
-    }
-
-    // Find a territory a user with no existing territories can start at.
-    public function findStartingSpot($user) {
-        $territory = null;
-
-        if ($user->starting_territory) {
-            $territory = Territory::query()
-                ->where('id', '=', $user->starting_territory)
-                ->whereDoesntHave('occupation')->first();
-        }
-
-        if (!$territory) {
-            $territory = Territory::query()
-                ->whereDoesntHave('occupation')->inRandomOrder()->first();
-        }
-
-        // User doesn't have a starting position set, or it's taken.
-        if (!$territory) {
-            $id = rand(1, 1372);
-
-            $territory = Territory::find($id); // No more unclaimed territory.
-        }
-
-        return $territory;
     }
 
     // Paginated list of all events available.
