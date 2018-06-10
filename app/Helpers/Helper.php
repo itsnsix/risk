@@ -62,8 +62,9 @@ class Helper {
 
         // #18424C ocean color.
         // #000000 border color.
+        // #FFFFFF Unoccupied color.
         // #99d9EA transport color.
-        if ($user || strlen($color) !== 7 || in_array($color, ['#18424C', '#000000', '#99d9EA'])) {
+        if ($user || strlen($color) !== 7 || in_array($color, ['#18424C', '#000000', '#99d9EA', '#FFFFFF'])) {
             // Inf. loop if more users than there are hex colors.
             return Helper::randomUniqueHexColor();
         } else {

@@ -17,16 +17,18 @@
             <div class="map-container dragscroll">
                 <div class="territory-popover" v-if="popover"
                      :style="{'top': popover.y + 'px', 'left': popover.x + 'px'}">
-                    <div class="popover-title" :style="{'background-color': popover.territory.occupation.user.color}">
-                        <img :src="popover.territory.occupation.user.image ? popover.territory.occupation.user.image : '/images/default_avatar.png'"/>
-                        <span>{{popover.territory.occupation.user.name}}</span>
-                        <div class="close-popover" @click="closePopover">X</div>
+                    <div class="popover-title" :style="{'background-color': popover.territory.occupation ? popover.territory.occupation.user.color : '#FFFFFF'}">
+                        <img v-if="popover.territory.occupation" :src="popover.territory.occupation.user.image ? popover.territory.occupation.user.image : '/images/default_avatar.png'"/>
+                        <span :style="popover.territory.occupation ? '' : 'color: #1D1F21; text-shadow: none;'">
+                            {{popover.territory.occupation ? popover.territory.occupation.user.name : 'Unoccupied'}}
+                        </span>
+                        <div :style="popover.territory.occupation ? '' : 'color: #1D1F21; text-shadow: none;'" class="close-popover" @click="closePopover">X</div>
                     </div>
                     <div class="popover-content">
                         <u>Territory {{popover.territory.id}}</u>
-                        <div>Captured: <b>{{formatDate(popover.territory.occupation.api_created_at)}}</b></div>
+                        <div v-if="popover.territory.occupation">Captured: <b>{{formatDate(popover.territory.occupation.api_created_at)}}</b></div>
 
-                        <div v-if="popover.territory.occupation.previous_occupation">Previous occupant: <b
+                        <div v-if="popover.territory.occupation && popover.territory.occupation.previous_occupation">Previous occupant: <b
                                 :style="{color: popover.territory.occupation.previous_occupation.user.color}">
                             {{popover.territory.occupation.previous_occupation.user.name}}</b>
                         </div>
@@ -228,7 +230,7 @@
 		    onMapClick: function(event) {
                 // Show territory occupation if it exists.
 			    let t = this.findTerritory({x: event.layerX, y: event.layerY});
-			    if (t && t.occupation) {
+			    if (t) {
 				    this.popover = {
 				    	territory: t,
                         x: event.layerX - 125, // Remove half the width of popover to center it.

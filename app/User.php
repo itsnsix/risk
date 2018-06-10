@@ -10,14 +10,25 @@ class User extends Model
 {
     protected $hidden = ['created_at', 'updated_at'];
 
+    // House relationship.
     public function house() {
         return $this->belongsTo(House::class);
     }
 
+    // Change the user's territory color.
     public function changeColor($color, $submittedAt) {
         preg_match_all("/^#(?>[a-fA-F0-9]{6}){1,2}$/", $color, $matches);
         if ($matches && count($matches[0]) > 0) {
             $color = strtoupper($matches[0][0]);
+
+            // #18424C ocean color.
+            // #000000 border color.
+            // #FFFFFF Unoccupied color.
+            // #99d9EA transport color.
+            if (strlen($color) !== 7 || in_array($color, ['#18424C', '#000000', '#99d9EA', '#FFFFFF'])) {
+                Log::info('Illegal color change: ' . $this->name . ' -> ' . $color);
+                return false;
+            }
 
             if (User::query()->where('color', $color)->exists()) {
                 Log::info('Duplicate color change: ' . $this->name . ' -> ' . $color);
@@ -43,6 +54,7 @@ class User extends Model
         }
     }
 
+    // Change the users avatar.
     public function updateAvatar($userIn) {
         $avatar = $userIn['avatar'] && $userIn['avatar']['thumb'] ?  $userIn['avatar']['thumb']['url'] : null;
         if (!$avatar) {
@@ -68,6 +80,7 @@ class User extends Model
         return true;
     }
 
+    // Change the user's starting spot.
     public function changeStartingPosition($territoryID, $submittedAt) {
         $territory = Territory::find($territoryID);
 
@@ -91,9 +104,9 @@ class User extends Model
         }
     }
 
+    // Change which house user belongs to.
     public function changeHouse($house) {
-        // TODO Create house if it doesn't exist and add the user to it.
-        // House can be null, in which case the user leaves his current house (if any).
+        // TODO Add user to house or leave house if $house is null.
         return false;
     }
 
