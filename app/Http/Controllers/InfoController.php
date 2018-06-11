@@ -10,6 +10,7 @@ use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class InfoController extends Controller
 {
@@ -137,6 +138,8 @@ class InfoController extends Controller
 
                 $commands = isset($entry['api_command']) ? $entry['api_command'] : null;
                 if ($commands) {
+                    Log::info('[COMMAND] ' . $user->name . ': ' . $commands);
+
                     // Structure: 'MOVE:NORTH,COLOR:#23E4DF'
                     $commands = explode(',', $commands);
 
