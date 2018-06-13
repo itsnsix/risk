@@ -218,7 +218,11 @@ class InfoController extends Controller
                 if ($d) {
                     $eventText .= " has moved $d and taken <b>T$territory->id</b> from ";
                 } else {
-                    $eventText .= " has taken <b>T$territory->id</b> from ";
+                    if ($territoryID) {
+                        $eventText .= " attacked and has taken <b>T$territory->id</b> from ";
+                    } else {
+                        $eventText .= " has taken <b>T$territory->id</b> from ";
+                    }
                 }
             }
             $eventText .= "<b style='color: $lastUser->color'>$lastUser->name</b>.";
