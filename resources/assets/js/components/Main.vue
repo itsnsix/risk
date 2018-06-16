@@ -41,7 +41,7 @@
 
                 <canvas @click="onMapClick" id="map" width="5644" height="2177"></canvas>
 
-                <div class="user-labels" v-show="showLabels">
+                <div class="user-labels" v-show="showLabels && !status">
                     <img class="user-label" :src="label.avatar" v-for="label in labels"
                          :id="'territory-' + label.territory.id"
                          :style="{top: label.y + 'px', left: label.x + 'px',
@@ -142,12 +142,26 @@
 	    },
 
 	    mounted() {
+            let labelWorker = new Worker('js/labler.js');
+            labelWorker.addEventListener('message', e => {
+                this.labels = e.data;
+            }, false);
+            let painterWorker = new Worker('js/painter.js');
+            painterWorker.addEventListener('message', e => {
+                this.context.putImageData(e.data, 0, 0);
+                this.status = null;
+            }, false);
+
 	    	axios.get('/territories')
                 .then(response => {
+                    this.status = 'Drawing map...';
                     this.territories = response.data;
-                    this.setupMap();
+
+                    labelWorker.postMessage(this.territories);
+                    this.setupMap(painterWorker);
                 })
                 .catch(response => {
+                    console.log(response);
                     this.status = 'Failed to load map.';
                 });
 
@@ -322,7 +336,7 @@
 	            return null;
             },
 
-		    setupMap: function() {
+		    setupMap: function(painter) {
 			    this.canvas = document.getElementById('map');
 			    this.context = this.canvas.getContext('2d');
 
@@ -330,119 +344,13 @@
 			    image.src = '/images/map.png';
 			    image.onload = () => {
 				    this.context.drawImage(image, 0, 0);
-				    this.context.fill();
-
-				    this.fillOccupations();
-				    this.status = null; // Hits when filling all occupations is done.
+                    let imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
+				    painter.postMessage({
+                        imageData: imageData,
+                        territories: this.territories,
+                        dimensions: {width: this.canvas.width, height: this.canvas.height}
+				    });
 			    };
-			    this.status = 'Drawing map...'; // Hits when map src is set on element.
-		    },
-
-		    fillOccupations: function() {
-			    let imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
-
-                for (let key in this.territories) {
-				    if (this.territories.hasOwnProperty(key)) {
-				    	let t = this.territories[key];
-
-				    	if (t.occupation) {
-						    this.fillTerritory(imageData, {x: t.x, y: t.y}, t.occupation.user.color);
-						    this.labelTerritory(t);
-					    }
-				    }
-			    }
-		    },
-
-            labelTerritory: function(territory) {
-		    	let size = parseInt(territory.size / 200, 10);
-		    	if (size > 40) size = 40;
-		    	if (size < 10) size = 10;
-
-		    	this.labels.push({
-                    territory: territory,
-                    x: territory.x - (size / 2),
-                    y: territory.y - (size / 2),
-                    avatar: territory.occupation.user.image ? territory.occupation.user.image : '/images/default_avatar.png',
-                    size: size
-                });
-            },
-
-		    fillTerritory: function(imageData, location, hexColor) {
-			    let color = Helpers.hexToRgb(hexColor);
-
-			    if (!color) {
-			    	console.log('Invalid fill color: ' + hexColor);
-			    	return false;
-                }
-
-                let coloredPixels = 0;
-			    let pixelStack = [[location.x, location.y]];
-
-			    if (!Helpers.validateInitialPixel(imageData, this.canvas.width,
-                        pixelStack[0][0], pixelStack[0][1])) {
-			    	return false;
-                }
-
-			    while (pixelStack.length) {
-				    // Where we current are in the image
-				    let currentPosition = pixelStack.pop();
-				    let x = currentPosition[0];
-				    let y = currentPosition[1];
-				    let pixelPosition = (y * this.canvas.width + x) * 4;
-				    let matchingColor = {
-					    r: imageData.data[pixelPosition],
-					    g: imageData.data[pixelPosition + 1],
-					    b: imageData.data[pixelPosition + 2]
-				    };
-
-				    // Walk upwards from position until we hit another color than the one we clicked on
-				    while (y-- >= 0 && Helpers.matchPixelColor(imageData, pixelPosition, matchingColor, color)) {
-					    pixelPosition -= this.canvas.width * 4;
-				    }
-
-				    pixelPosition += this.canvas.width * 4;
-				    ++y;
-				    let reachLeft = false, reachRight = false;
-				    // Walk downwards and look for pixels of the same color to the left and right
-				    while (y++ < this.canvas.height - 1 && Helpers.matchPixelColor(imageData, pixelPosition, matchingColor, color)) {
-					    Helpers.colorPixel(imageData, pixelPosition, color);
-                        coloredPixels++;
-
-					    // Check left
-					    if (x > 0) {
-						    if (Helpers.matchPixelColor(imageData, pixelPosition - 4, matchingColor, color)) {
-							    if (!reachLeft) {
-								    pixelStack.push([x - 1, y]);
-								    reachLeft = true;
-							    }
-						    } else if (reachLeft) {
-							    reachLeft = false;
-						    }
-					    }
-
-					    // Check right
-					    if (x < this.canvas.width - 1) {
-						    if (Helpers.matchPixelColor(imageData, pixelPosition + 4, matchingColor, color)) {
-							    if (!reachRight) {
-								    pixelStack.push([x + 1, y]);
-								    reachRight = true;
-							    }
-						    } else if (reachRight) {
-							    reachRight = false;
-						    }
-					    }
-
-					    pixelPosition += this.canvas.width * 4;
-				    }
-
-				    if (coloredPixels > 50000) {
-					    console.log('Too big area');
-					    return false;
-				    }
-			    }
-
-			    this.context.putImageData(imageData, 0, 0);
-			    return coloredPixels;
 		    }
 	    }
     }
