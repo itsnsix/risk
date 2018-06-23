@@ -1,0 +1,84 @@
+.modal-mask {
+  position: fixed;
+  z-index: 100;
+  top: 60px;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding-bottom: 60px;
+  background-color: rgba(0, 0, 0, .5);
+  display: table;
+  transition: opacity .3s ease;
+
+  .modal-wrapper {
+    display: table-cell;
+    vertical-align: middle;
+
+    .modal-container {
+      width: 450px;
+      margin: 0 auto;
+      padding: 20px 10px;
+      background-color: #23262a;
+      color: #c6c9c7;
+      border-radius: 2px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+      transition: all .3s ease;
+      font-family: Helvetica, Arial, sans-serif;
+    }
+  }
+}
+
+.modalheader {
+  position: relative;
+  font-size: 20px;
+  padding: 0 10px 15px 10px;
+  border-bottom: 3px solid rgba(198, 201, 199, .3);
+
+  .close-modal {
+    top: -15px;
+    right: 0;
+    position: absolute;
+    cursor: pointer;
+    padding: 10px;
+    opacity: 0.6;
+    transition: opacity .3s;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+.modalbody {
+  padding: 15px 10px 0 10px;
+
+  ol {
+    padding-left: 0;
+    margin-bottom: 0;
+    margin-left: 17px;
+  }
+}
+
+.modal-default-button {
+  float: right;
+}
+
+.modal-enter {
+  opacity: 0;
+}
+
+.modal-leave-active {
+  opacity: 0;
+}
+
+.modal-enter .modal-container,
+.modal-leave-active .modal-container {
+  -webkit-transform: scale(1.1);
+  transform: scale(1.1);
+}
+
+@media(max-width: 500px) {
+  .modal-mask .modal-wrapper .modal-container {
+    width: 100%;
+  }
+}

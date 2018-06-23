@@ -3,7 +3,7 @@
         <div class="main-navbar">
             <span>BATORU</span>
 
-            <!--<div class="help-toggle">?</div>-->
+            <div class="help-toggle" @click="toggleHelpModal">?</div>
             <div @click="toggleLabels" class="label-toggle">
                 <img :class="{active: showLabels}" class="user-label" src="/images/default_avatar.png"/></div>
             <div class="navbar-toggle" @click="toggleEventMenu">
@@ -110,6 +110,8 @@
                     <div class="warning-label" v-else>Whoops, seems nothing has happened here yet.</div>
                 </div>
             </transition>
+
+            <help-modal></help-modal>
         </div>
     </div>
 </template>
@@ -117,10 +119,12 @@
 <script>
     import Helpers from '../helpers';
     import VueEasyPieChart from 'vue-easy-pie-chart';
+    import HelpModal from './HelpModal';
 
     export default {
         components:{
-            VueEasyPieChart
+            VueEasyPieChart,
+            HelpModal
         },
 
 	    data() {
@@ -184,6 +188,10 @@
         },
 
 	    methods: {
+            toggleHelpModal: function() {
+                Bus.$emit('toggle-help-modal');
+            },
+
             toggleLabels: function() {
                 this.showLabels = !this.showLabels;
             },
