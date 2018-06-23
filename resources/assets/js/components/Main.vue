@@ -161,7 +161,6 @@
                     this.setupMap(painterWorker);
                 })
                 .catch(response => {
-                    console.log(response);
                     this.status = 'Failed to load map.';
                 });
 

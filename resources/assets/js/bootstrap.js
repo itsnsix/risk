@@ -1,6 +1,14 @@
+import Raven from  'raven-js';
+import RavenVue from 'raven-js/plugins/vue';
+
+window.Vue = require('vue');
 window._ = require('lodash');
 window.Popper = require('popper.js').default;
 window.Helpers = require('./helpers');
+
+Raven.config('https://d8945c5e814042cea5af1fb86389e9e2@sentry.io/1231457')
+    .addPlugin(RavenVue, Vue)
+    .install();
 
 /**
  * We'll load jQuery and the Bootstrap jQuery plugin which provides support

@@ -21,6 +21,7 @@
     },
     "dependencies": {
         "dragscroll": "^0.0.8",
+        "raven-js": "^3.26.3",
         "vue-easy-pie-chart": "^1.0.3"
     }
 }
