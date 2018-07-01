@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use App\IgnoredEntry;
 use App\Occupation;
 use App\User;
 
@@ -13,13 +14,28 @@ class Helper {
 
         $from = 1;
 
-        $lastImport = Occupation::query()
+        $lastOccupation = Occupation::query()
             ->select('api_data_id')
             ->whereNotNull('api_data_id')
             ->orderBy('api_data_id', 'DESC')->first();
 
-        if ($lastImport) {
-            $from = $lastImport->api_data_id + 1;
+        $lastIgnoredEntry = IgnoredEntry::query()
+            ->select('api_data_id')
+            ->whereNotNull('api_data_id')
+            ->orderBy('api_data_id', 'DESC')->first();
+
+        if ($lastOccupation || $lastIgnoredEntry) {
+            if ($lastOccupation && $lastIgnoredEntry) {
+                $lastImport = ($lastOccupation->api_data_id > $lastIgnoredEntry->api_data_id ? $lastOccupation : $lastIgnoredEntry);
+            } else if (!$lastOccupation) {
+                $lastImport = $lastIgnoredEntry;
+            } else if (!$lastIgnoredEntry) {
+                $lastImport = $lastOccupation;
+            }
+
+            if (isset($lastImport)) {
+                $from = $lastImport->api_data_id + 1;
+            }
         }
 
         $url .= '?from=' . $from;

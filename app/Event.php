@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Event extends Model
 {
     protected $hidden = ['updated_at'];
+    protected $fillable = ['user_id', 'text', 'extra', 'timestamp'];
 
     public function getTimestampAttribute($value)
     {

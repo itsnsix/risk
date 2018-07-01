@@ -10,12 +10,22 @@
                     </div>
 
                     <div class="modalbody">
-                        <ol>
-                            <li>Post art as usual</li>
-                            <li>Gain territory automatically</li>
-                            <li>???</li>
-                            <li>Profit</li>
-                        </ol>
+                        <div class="info-section">
+                            <ol>
+                                <li>Post art as usual</li>
+                                <li>Gain territory automatically</li>
+                                <li>???</li>
+                                <li>Profit</li>
+                            </ol>
+                        </div>
+
+                        <div class="info-section">
+                            The map updates every 30 minutes. If you can't wait that long, click <a target="_blank" href="/import">here</a> to trigger an update.
+                        </div>
+
+                        <div class="info-section">
+                            Your army only has enough strength to expand to a maximum of 3 new territories a day.
+                        </div>
                     </div>
                 </div>
             </div>

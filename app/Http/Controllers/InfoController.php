@@ -4,13 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Event;
 use App\Helpers\Helper;
+use App\IgnoredEntry;
 use App\Occupation;
 use App\Territory;
 use App\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Query\JoinClause;
 
 class InfoController extends Controller
 {
@@ -45,7 +48,7 @@ class InfoController extends Controller
                 DB::raw("CONCAT(territories.x, '-', territories.y) as location"),
                 DB::raw('GROUP_CONCAT(IF(borders.territory_id = territories.id, borders.bordering_id, borders.territory_id)) AS border_ids')
             )
-            ->leftJoin('borders', function($join) {
+            ->leftJoin('borders', function(JoinClause $join) {
                 $join->on('borders.territory_id', '=', 'territories.id');
                 $join->orOn('borders.bordering_id', '=', 'territories.id');
             })
@@ -179,13 +182,40 @@ class InfoController extends Controller
     }
 
     // Expand a user's territory.
-    public function expandTerritory($user, $dataID, $submittedAt, $direction, $territoryID) {
-        $expansion = $this->findExpansion($user, $direction, $territoryID);
+    public function expandTerritory(User $user, $dataID, $submittedAt, $direction, $territoryID) {
+        $expansion = $this->findExpansion($user, $direction, $territoryID, $submittedAt);
         $territory = $expansion['territory'];
-        $expansion = $expansion['status']; // START or EXPAND
+        $expansion = $expansion['status']; // START || EXPAND || EXHAUSTED
 
         $eventText = "<p>";
         $eventText .= "<b style='color: $user->color'>$user->name</b>";
+
+        if ($expansion === 'EXHAUSTED') {
+            $eventText .= " tries to expand, but their army is <b>exhausted</b>.</p>";
+
+            $sourceUrl = env('ENTRY_SOURCE_URL', null);
+            if ($sourceUrl) {
+                $sourceUrl = str_replace('{id}', $dataID, $sourceUrl);
+                $extra = ['source_url' => $sourceUrl];
+            }
+
+            $event = new Event([
+                'user_id' => $user->id,
+                'text' => $eventText,
+                'extra' => (isset($extra) ? json_encode($extra): null),
+                'timestamp' => $submittedAt
+            ]);
+            $event->save();
+
+            $ignoredEntry = new IgnoredEntry([
+                'user_id' => $user->id,
+                'api_data_id' => $dataID,
+                'api_created_at' => $submittedAt
+            ]);
+            $ignoredEntry->save();
+
+            return $ignoredEntry;
+        }
 
         // Set previous occupation to inactive if this occupation overtook someone.
         if ($territory->occupation) {
@@ -265,13 +295,14 @@ class InfoController extends Controller
         }
 
         // Create the occupation.
-        $occupation = new Occupation();
-        $occupation->user_id = $user->id;
-        $occupation->active = true;
-        $occupation->api_data_id = $dataID;
-        $occupation->api_created_at = $submittedAt;
-        $occupation->territory_id = $territory->id;
-        $occupation->previous_occupation = $territory->occupation ? $territory->occupation->id : null;
+        $occupation = new Occupation([
+            'user_id' => $user->id,
+            'active' => true,
+            'api_data_id' => $dataID,
+            'api_created_at' => $submittedAt,
+            'territory_id' => $territory->id,
+            'previous_occupation' => ($territory->occupation ? $territory->occupation->id : null)
+        ]);
         $occupation->save();
 
         $eventText .= '</p>';
@@ -284,20 +315,21 @@ class InfoController extends Controller
             $extra['source_url'] = $sourceUrl;
         }
 
-        $event = new Event();
-        $event->user_id = $user->id;
-        $event->text = $eventText;
-        $event->extra = json_encode($extra);
-        $event->timestamp = $submittedAt;
+        $event = new Event([
+            'user_id' => $user->id,
+            'text' => $eventText,
+            'extra' => json_encode($extra),
+            'timestamp' => $submittedAt
+        ]);
         $event->save();
 
         return $occupation;
     }
 
     // Find a territory for the user to expand to.
-    public function findExpansion($user, $direction, $territoryID) {
+    public function findExpansion(User $user, $direction, $territoryID, $submittedAt) {
         $territories = Territory::query()
-            ->whereHas('occupation', function ($query) use ($user) {
+            ->whereHas('occupation', function (Builder $query) use ($user) {
                 $query->where('user_id', '=', $user->id);
             })
             ->with('borders.occupation.user', 'borderedTo.occupation.user')
@@ -307,6 +339,16 @@ class InfoController extends Controller
         if (!$territories->count()) {
             return ['territory' => $user->findStartingSpot(), 'status' => 'START'];
         } else {
+            // Get number of entries already submitted on the same day as this entry.
+            $expansionsToday = Occupation::query()
+                ->where('user_id', '=', $user->id)
+                ->whereRaw("DATE(api_created_at) = DATE(\"$submittedAt\")")
+                ->count();
+
+            if ($expansionsToday >= env('EXPAND_LIMIT', 3)) {
+                return ['territory' => null, 'status' => 'EXHAUSTED'];
+            }
+
             $borders = [];
 
             // Merge territory's borders and borderedTo to find available territories for expansion.

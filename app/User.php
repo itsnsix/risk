@@ -41,10 +41,11 @@ class User extends Model
             $this->color = $color;
             $this->save();
 
-            $event = new Event();
-            $event->user_id = $this->id;
-            $event->text = $eventText;
-            $event->timestamp = $submittedAt;
+            $event = new Event([
+                'user_id' => $this->id,
+                'text' => $eventText,
+                'timestamp' => $submittedAt
+            ]);
             $event->save();
 
             return true;
@@ -91,10 +92,11 @@ class User extends Model
             $this->starting_territory = $territoryID;
             $this->save();
 
-            $event = new Event();
-            $event->user_id = $this->id;
-            $event->text = $eventText;
-            $event->timestamp = $submittedAt;
+            $event = new Event([
+                'user_id' => $this->id,
+                'text' => $eventText,
+                'timestamp' => $submittedAt
+            ]);
             $event->save();
 
             return true;
@@ -107,6 +109,7 @@ class User extends Model
     // Change which house user belongs to.
     public function changeHouse($house) {
         // TODO Add user to house or leave house if $house is null.
+        // TODO Delete the house if no users left in it after leaving.
         return false;
     }
 
