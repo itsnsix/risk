@@ -275,6 +275,35 @@ html, body, #app, .main-outer {
     }
   }
 
+  .popover-subtitle {
+    text-align: center;
+    border-bottom: 2px solid rgba(40, 42, 46, .3);
+    box-sizing: border-box;
+    padding: 5px 25px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 0 0 2px rgba(40, 42, 46, .5);
+    color: #FFFFFF;
+
+    span {
+      text-overflow: ellipsis;
+      overflow: hidden;
+      height: 14px;
+      line-height: 14px;
+    }
+
+    img {
+      height: 15px;
+      width: 15px;
+      border-radius: 15px;
+      margin-right: 5px;
+      box-shadow: 0 0 2px 0 rgba(40, 42, 46, .5);
+    }
+  }
+
   .popover-content {
     padding: 10px;
   }

@@ -113,27 +113,40 @@ class User extends Model
         return false;
     }
 
-    // Find a territory a user with no existing territories can start at.
-    public function findStartingSpot() {
+    // Find starting territory for user.
+    public function findStartingSpot($force = false) {
         $territory = null;
 
         if ($this->starting_territory) {
-            $territory = Territory::query()
-                ->where('id', '=', $this->starting_territory)
-                ->whereDoesntHave('occupation')->first();
+            // Forced start regardless of occupation.
+            if ($force) {
+                $territory = Territory::query()
+                    ->where('id', '=', $this->starting_territory);
+            } else {
+                // Check if user's starting territory is unclaimed.
+                $territory = Territory::query()
+                    ->where('id', '=', $this->starting_territory)
+                    ->whereDoesntHave('occupation')->first();
+            }
         }
 
+        // If it's occupied or no starting position, try finding a random unclaimed territory.
         if (!$territory) {
             $territory = Territory::query()
                 ->whereDoesntHave('occupation')->inRandomOrder()->first();
         }
 
-        // User doesn't have a starting position set, or it's taken.
+        // No more unclaimed territory, return user's starting position or a completely random territory.
         if (!$territory) {
-            $lastTerritoryID = Territory::query()->orderBy('id', 'DESC')->first()->id;
-            $id = rand(1, $lastTerritoryID);
+            if ($this->starting_territory) {
+                $territory = Territory::query()
+                    ->where('id', '=', $this->starting_territory);
+            } else {
+                $lastTerritoryID = Territory::query()->orderBy('id', 'DESC')->first()->id;
+                $id = rand(1, $lastTerritoryID);
 
-            $territory = Territory::find($id); // No more unclaimed territory.
+                $territory = Territory::find($id);
+            }
         }
 
         return $territory;

@@ -138,6 +138,7 @@ class InfoController extends Controller
             if (!Helper::findImportedID($entry['id'])) {
                 $direction = 'RANDOM';
                 $territoryID = null;
+                $forceStart = false;
 
                 $commands = isset($entry['api_command']) ? $entry['api_command'] : null;
                 if ($commands) {
@@ -159,7 +160,10 @@ class InfoController extends Controller
 
                                 // User changes
                                 case 'COLOR': $user->changeColor($value, $entry['created_at']); break;
-                                case 'START': $user->changeStartingPosition($value, $entry['created_at']); break;
+                                case 'START':
+                                    $user->changeStartingPosition($value, $entry['created_at']);
+                                    $forceStart = true;
+                                    break;
                                 case 'AVATAR': $user->updateAvatar($entry['user']); break;
 
                                 // House commands
@@ -171,7 +175,7 @@ class InfoController extends Controller
                     }
                 }
 
-                $this->expandTerritory($user, $entry['id'], $entry['created_at'], $direction, $territoryID);
+                $this->expandTerritory($user, $entry['id'], $entry['created_at'], $direction, $territoryID, $forceStart);
                 $importCount++;
             }
         }
@@ -182,8 +186,8 @@ class InfoController extends Controller
     }
 
     // Expand a user's territory.
-    public function expandTerritory(User $user, $dataID, $submittedAt, $direction, $territoryID) {
-        $expansion = $this->findExpansion($user, $direction, $territoryID, $submittedAt);
+    public function expandTerritory(User $user, $dataID, $submittedAt, $direction, $territoryID, $forceStart) {
+        $expansion = $this->findExpansion($user, $direction, $territoryID, $submittedAt, $forceStart);
         $territory = $expansion['territory'];
         $expansion = $expansion['status']; // START || EXPAND || EXHAUSTED
 
@@ -223,27 +227,7 @@ class InfoController extends Controller
             if ($expansion === 'START') {
                 $eventText .= " has appeared in <b>T$territory->id</b> and taken it from ";
             } else {
-                switch ($direction) {
-                    case 'W':
-                    case 'WEST': {
-                        $d = 'west'; break;
-                    }
-                    case 'N':
-                    case 'NORTH': {
-                        $d = 'north'; break;
-                    }
-                    case 'E':
-                    case 'EAST': {
-                        $d = 'east'; break;
-                    }
-                    case 'S':
-                    case 'SOUTH': {
-                        $d = 'south'; break;
-                    }
-                    default: {
-                        $d = null; break;
-                    }
-                }
+                $d = Helper::getDirection($direction);
 
                 if ($d) {
                     $eventText .= " has moved $d and taken <b>T$territory->id</b> from ";
@@ -264,27 +248,7 @@ class InfoController extends Controller
             if ($expansion === 'START') {
                 $eventText .= " has appeared in <b>T$territory->id</b>.";
             } else {
-                switch ($direction) {
-                    case 'W':
-                    case 'WEST': {
-                        $d = 'west'; break;
-                    }
-                    case 'N':
-                    case 'NORTH': {
-                        $d = 'north'; break;
-                    }
-                    case 'E':
-                    case 'EAST': {
-                        $d = 'east'; break;
-                    }
-                    case 'S':
-                    case 'SOUTH': {
-                        $d = 'south'; break;
-                    }
-                    default: {
-                        $d = null; break;
-                    }
-                }
+                $d = Helper::getDirection($direction);
 
                 if ($d) {
                     $eventText .= " has moved $d and taken control of <b>T$territory->id</b>.";
@@ -327,7 +291,9 @@ class InfoController extends Controller
     }
 
     // Find a territory for the user to expand to.
-    public function findExpansion(User $user, $direction, $territoryID, $submittedAt) {
+    public function findExpansion(User $user, $direction, $territoryID, $submittedAt, $forceStart) {
+        // TODO Don't expand into territories owned by your own house, treat them as your own.
+
         $territories = Territory::query()
             ->whereHas('occupation', function (Builder $query) use ($user) {
                 $query->where('user_id', '=', $user->id);
@@ -337,7 +303,7 @@ class InfoController extends Controller
 
         // User's first post
         if (!$territories->count()) {
-            return ['territory' => $user->findStartingSpot(), 'status' => 'START'];
+            return ['territory' => $user->findStartingSpot($forceStart), 'status' => 'START'];
         } else {
             // Get number of entries already submitted on the same day as this entry.
             $expansionsToday = Occupation::query()

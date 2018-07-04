@@ -10,7 +10,8 @@ self.addEventListener('message', function(e) {
             let t = territories[key];
 
             if (t.occupation) {
-                fillTerritory(imageData, dimensions, {x: t.x, y: t.y}, t.occupation.user.color);
+                let color = t.occupation.user.house ? t.occupation.user.house.color : t.occupation.user.color;
+                fillTerritory(imageData, dimensions, {x: t.x, y: t.y}, color);
             }
         }
     }

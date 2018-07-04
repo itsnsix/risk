@@ -15,25 +15,7 @@
 
         <div class="main">
             <div class="map-container dragscroll">
-                <div class="territory-popover" v-if="popover"
-                     :style="{'top': popover.y + 'px', 'left': popover.x + 'px'}">
-                    <div class="popover-title" :style="{'background-color': popover.territory.occupation ? popover.territory.occupation.user.color : '#FFFFFF'}">
-                        <img v-if="popover.territory.occupation" :src="popover.territory.occupation.user.image ? popover.territory.occupation.user.image : '/images/default_avatar.png'"/>
-                        <span :style="popover.territory.occupation ? '' : 'color: #1D1F21; text-shadow: none;'">
-                            {{popover.territory.occupation ? popover.territory.occupation.user.name : 'Unoccupied'}}
-                        </span>
-                        <div :style="popover.territory.occupation ? '' : 'color: #1D1F21; text-shadow: none;'" class="close-popover" @click="closePopover">X</div>
-                    </div>
-                    <div class="popover-content">
-                        <u>Territory {{popover.territory.id}}</u>
-                        <div v-if="popover.territory.occupation">Captured: <b>{{formatDate(popover.territory.occupation.api_created_at)}}</b></div>
-
-                        <div v-if="popover.territory.occupation && popover.territory.occupation.previous_occupation">Previous occupant: <b
-                                :style="{color: popover.territory.occupation.previous_occupation.user.color}">
-                            {{popover.territory.occupation.previous_occupation.user.name}}</b>
-                        </div>
-                    </div>
-                </div>
+                <popover :data="popover"></popover>
 
                 <transition name="loading">
                     <div class="loading" v-if="status">{{status}}</div>
@@ -49,67 +31,7 @@
                 </div>
             </div>
 
-            <transition name="slide-menu">
-                <div class="sidebar" v-show="showMenu">
-                    <div class="sidebar-header">Day {{stats ? stats.day : '-'}}</div>
-                    <div class="stat-container" v-if="stats">
-                        <div>
-                            <vue-easy-pie-chart line-cap="butt" track-color="#282A2E" bar-color="#C5C8C6" :line-width="5"
-                                                :percent="stats.occupied_percentage">
-                                <p class="pie-percentage">{{stats.occupied_percentage}}%</p>
-                                <p class="pie-subtitle">Conquered</p>
-                            </vue-easy-pie-chart>
-                        </div>
-                        <div>
-                            <table class="table">
-                                <tbody>
-                                <tr v-if="stats.highest_count">
-                                    <td>Conqueror</td>
-                                    <td><span><b :style="'color: ' + stats.highest_count.color">{{stats.highest_count.name}}</b></span></td>
-                                </tr>
-                                <tr v-if="stats.biggest">
-                                    <td>Biggest</td>
-                                    <td><span><b :style="'color: ' + stats.biggest.color">{{stats.biggest.name}}</b></span></td>
-                                </tr>
-                                <tr v-if="stats.angriest">
-                                    <td>Angriest</td>
-                                    <td><span><b :style="'color: ' + stats.angriest.color">{{stats.angriest.name}}</b></span></td>
-                                </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div v-else>
-                        <div class="warning-label">Loading stats...</div>
-                    </div>
-
-                    <div class="sidebar-header second-header">Event log</div>
-
-                    <div class="events" v-if="events && events.data && events.data.length > 0">
-                        <div class="event" v-for="event in events.data">
-                            <div class="event-header">
-                                <div class="timestamp">{{event.timestamp}}</div>
-                                <div>
-                                    <img v-if="event.extra && event.extra.territory_id"
-                                         @click="scrollToTerritory(event.extra.territory_id)" src="/images/binoculars.png"/>
-                                    <a v-if="event.extra && event.extra.source_url"
-                                       :href="event.extra.source_url" target="_blank">
-                                        <img src="/images/picture.png"/>
-                                    </a>
-                                </div>
-                            </div>
-
-                            <div class="event-text" v-html="event.text"></div>
-                        </div>
-
-                        <button v-if="events.next_page_url" @click="loadMoreEvents" class="btn" :disabled="loadingMoreEvents">
-                            {{loadingMoreEvents ? 'Loading...' : 'Load more'}}
-                        </button>
-                    </div>
-                    <div v-else-if="loadingEvents" class="warning-label">Loading events...</div>
-                    <div class="warning-label" v-else>Whoops, seems nothing has happened here yet.</div>
-                </div>
-            </transition>
+            <sidebar></sidebar>
 
             <help-modal></help-modal>
         </div>
@@ -118,30 +40,26 @@
 
 <script>
     import Helpers from '../helpers';
-    import VueEasyPieChart from 'vue-easy-pie-chart';
     import HelpModal from './HelpModal';
+    import Sidebar from './Sidebar';
+    import Popover from './Popover';
 
     export default {
         components:{
-            VueEasyPieChart,
-            HelpModal
+            HelpModal,
+            Sidebar,
+            Popover,
         },
 
 	    data() {
 	    	return {
 			    status: 'Loading map...',
 			    territories: {},
-                events: {data: []},
                 canvas: null,
                 context: null,
                 labels: [],
-                showMenu: false,
 			    popover: null,
                 showLabels: true,
-                loadingMoreEvents: false,
-                loadingEvents: true,
-                loadingStats: true,
-                stats: null
 	    	}
 	    },
 
@@ -168,23 +86,8 @@
                     this.status = 'Failed to load map.';
                 });
 
-            axios.get('/events')
-                .then(response => {
-                    this.events = response.data;
-                    this.loadingEvents = false;
-                })
-                .catch(response => {
-                    this.loadingEvents = false;
-                });
-
-            axios.get('/stats')
-                .then(response => {
-                    this.stats = response.data;
-                    this.loadingStats = false;
-                })
-                .catch(response => {
-                    this.loadingStats = false;
-                });
+	    	Bus.$on('scroll-to-territory', this.scrollToTerritory);
+	    	Bus.$on('close-popover', this.closePopover);
         },
 
 	    methods: {
@@ -221,31 +124,12 @@
                 });
             },
 
-            loadMoreEvents: function() {
-                if (!this.loadingMoreEvents) {
-                    this.loadingMoreEvents = true;
-                    axios.get(this.events.next_page_url)
-                        .then(response => {
-                            response.data.data = this.events.data.concat(response.data.data);
-                            this.events = response.data;
-                            this.loadingMoreEvents = false;
-                        })
-                        .catch(response => {
-                            this.loadingMoreEvents = false;
-                        });
-                }
-            },
-
-		    formatDate: function(date) {
-		    	return Helpers.formatDate(date);
-            },
-
 		    closePopover: function() {
 		    	this.popover = null;
             },
 
 		    toggleEventMenu: function() {
-		    	this.showMenu = !this.showMenu;
+                Bus.$emit('toggle-sidebar');
             },
 
 		    onMapClick: function(event) {

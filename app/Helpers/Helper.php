@@ -90,8 +90,42 @@ class Helper {
 
     // Check if a data entry has been imported before.
     public static function findImportedID($id) {
-        return Occupation::query()
+        $entry = Occupation::query()
             ->where('api_data_id', '=', $id)
             ->first();
+
+        if (!$entry) {
+            $entry = IgnoredEntry::query()
+                ->where('api_data_id', '=', $id)
+                ->first();
+        }
+
+        return $entry;
+    }
+
+    public static function getDirection($key) {
+        switch ($key) {
+            case 'W':
+            case 'WEST': {
+                $direction = 'west'; break;
+            }
+            case 'N':
+            case 'NORTH': {
+                $direction = 'north'; break;
+            }
+            case 'E':
+            case 'EAST': {
+                $direction = 'east'; break;
+            }
+            case 'S':
+            case 'SOUTH': {
+                $direction = 'south'; break;
+            }
+            default: {
+                $direction = null; break;
+            }
+        }
+
+        return $direction;
     }
 }
