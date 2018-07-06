@@ -8,7 +8,6 @@ use App\IgnoredEntry;
 use App\Occupation;
 use App\Territory;
 use App\User;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -177,6 +176,7 @@ class InfoController extends Controller
                 }
 
                 $this->expandTerritory($user, $entry['id'], $entry['created_at'], $direction, $territoryID, $forceStart);
+                $this->cleanupClusters($entry['created_at']); // Severe performance hit
                 $importCount++;
             }
         }
@@ -397,7 +397,7 @@ class InfoController extends Controller
         return response()->json($events, Response::HTTP_OK);
     }
 
-    // Create a new territory
+    // Create a new territory.
     public function createTerritory(Request $request) {
         $this->validate($request, [
             'x' => 'required|integer',
@@ -431,8 +431,8 @@ class InfoController extends Controller
         return response()->json(['result' => $syncResult], $syncResult ? Response::HTTP_OK : Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 
-    // Cut off and unclaim all un-linked territory clusters
-    public function cleanupClusters() {
+    // Cut off and unclaim all un-linked territory clusters.
+    public function cleanupClusters($time) {
         $users = User::all();
         $total = collect();
 
@@ -465,7 +465,7 @@ class InfoController extends Controller
                 $event = new Event([
                     'user_id' => $user->id,
                     'text' => $eventText,
-                    'timestamp' => Carbon::now()
+                    'timestamp' => $time
                 ]);
                 $event->save();
 
