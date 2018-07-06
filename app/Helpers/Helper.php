@@ -128,4 +128,33 @@ class Helper {
 
         return $direction;
     }
+
+    public static function clusterGroups($groups) {
+        $clusters = [];
+
+        foreach ($groups as $group) {
+            foreach ($clusters as $key => $cluster) {
+                // Check for every number in the group.
+                foreach ($group as $number) {
+
+                    if (in_array($number, $cluster)) {
+                        $clusters[$key] = array_values(array_unique(array_merge($cluster, $group)));
+
+                        // Continue to the next group.
+                        continue 3;
+                    }
+                }
+            }
+
+            // No matching cluster found, add the group as a new cluster.
+            $clusters[] = $group;
+        }
+
+        // If nothing happened everything has been merged.
+        if ($groups === $clusters) {
+            return $clusters;
+        } else {
+            return Helper::clusterGroups($clusters);
+        }
+    }
 }

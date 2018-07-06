@@ -2,7 +2,9 @@
 
 namespace App;
 
+use App\Helpers\Helper;
 use finfo;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 
@@ -150,5 +152,31 @@ class User extends Model
         }
 
         return $territory;
+    }
+
+    public function territoryClusters() {
+        $userID = $this->id;
+
+        // Get all territories
+        $territories = Territory::query()
+            ->whereHas('occupation', function (Builder $query) use ($userID) {
+                $query->where('user_id', '=', $userID);
+            })
+            ->with('borders', 'borderedTo')
+            ->get();
+        $territoryIDs = $territories->map(function ($t) {return $t->id;});
+
+        // Create simple ID array groups of territories borders + itself.
+        $groups = [];
+        foreach ($territories as $t) {
+            $borders = $t->borders->map(function ($b) {return $b->id;})->concat($t->borderedTo->map(function ($b) {return $b->id;}));
+            $borders->push($t->id);
+            $borders = $borders->filter(function($id) use ($territoryIDs) {
+                return $territoryIDs->contains($id);
+            })->values();
+            $groups[] = $borders->values()->all();
+        }
+
+        return Helper::clusterGroups($groups);
     }
 }

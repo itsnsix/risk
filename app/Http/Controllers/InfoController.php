@@ -8,6 +8,7 @@ use App\IgnoredEntry;
 use App\Occupation;
 use App\Territory;
 use App\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -428,5 +429,50 @@ class InfoController extends Controller
         $syncResult = $territory->borders()->sync($request->input('border_ids'));
 
         return response()->json(['result' => $syncResult], $syncResult ? Response::HTTP_OK : Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    // Cut off and unclaim all un-linked territory clusters
+    public function cleanupClusters() {
+        $users = User::all();
+        $total = collect();
+
+        foreach ($users as $user) {
+            $updated = 0;
+
+            $clusters = $user->territoryClusters();
+
+            $biggestCluster = 0;
+            foreach ($clusters as $key => $cluster) {
+                if (count($cluster) > count($clusters[$biggestCluster])) {
+                    // Save biggest by key instead of size in case several clusters of same size exist.
+                    $biggestCluster = $key;
+                }
+            }
+
+            foreach ($clusters as $key => $cluster) {
+                if ($key !== $biggestCluster) {
+                    $updated += Occupation::query()
+                        ->whereIn('territory_id', $cluster)
+                        ->where([['user_id', '=', $user->id], ['active', '=', true]])
+                        ->update(['active' => false]);
+                }
+            }
+
+            if ($updated) {
+                $eventText = "<p><b style='color: $user->color'>$user->name</b>";
+                $eventText .= " has been <b>cut off</b> from $updated of their territories.</p>";
+
+                $event = new Event([
+                    'user_id' => $user->id,
+                    'text' => $eventText,
+                    'timestamp' => Carbon::now()
+                ]);
+                $event->save();
+
+                $total->put($user->name, $updated);
+            }
+        }
+
+        return response()->json(['result' => $total], Response::HTTP_OK);
     }
 }
