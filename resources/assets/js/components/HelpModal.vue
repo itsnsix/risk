@@ -34,12 +34,11 @@
                         </div>
 
                         <div class="info-section">
-                            <b>Replace {} with your value. For example {ID} becomes 1234.</b>
                             <p><b><u>Commands available:</u></b></p>
-                            <p><b>MOVE:{DIRECTION}</b></p> - You'll expand in the given direction (Valid: N, S, W, E, NORTH, SOUTH, WEST or EAST).
-                            <p><b>TAKE:{ID}</b></p> - You'll expand to given territory (supply the territory's id which is shown when you click the territory i.e TAKE:1323). This only works if your territory borders to it.
-                            <p><b>COLOR:{#000000}</b></p> - Change your color.
-                            <p><b>START:{ID}</b></p> - Change your starting position for when you're wiped off the map and restart.
+                            <p><b>MOVE:DIRECTION</b></p> - Change DIRECTION to (N, S, W, E, NORTH, SOUTH, WEST or EAST). You'll expand in the given direction.
+                            <p><b>TAKE:ID</b></p> - Change ID to actual territory ID. You'll expand to given territory. This only works if your territory borders to it.
+                            <p><b>COLOR:#000000</b></p> - Change #000000 to desired color. Changes your map and name color.
+                            <p><b>START:ID</b></p> - Change ID to actual territory ID. Changes your starting position for when you're wiped off the map and restart.
                             <p><b>AVATAR:UPDATE</b></p> - Force your avatar to be updated on the map from the main site.
                         </div>
                     </div>
