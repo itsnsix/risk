@@ -7,7 +7,10 @@
                     <tbody>
                     <tr v-for="(user, index) in stats.highscore">
                         <td>
-                            <img class="king_icon" v-if="!index" src="/images/crown.png"/>
+                            <div class="highscore_img">
+                                <img class="king_icon" v-if="!index" src="/images/crown.png"/>
+                                <img class="highscore_avatar" :src="getUserAvatar(user)"/>
+                            </div>
                             <b class="highscore_name" :style="'color: ' + user.color">{{user.name}}</b>
                         </td>
                         <td>
@@ -115,7 +118,17 @@
 
             scrollToTerritory: function(territoryID) {
                 Bus.$emit('scroll-to-territory', territoryID);
-            }
+            },
+
+            getUserAvatar: function(user) {
+                let img = '/images/default_avatar.png';
+
+                if (user && user.image) {
+                    img = user.image;
+                }
+
+                return img;
+            },
         }
     }
 </script>

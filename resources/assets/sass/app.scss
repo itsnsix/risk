@@ -326,11 +326,6 @@ html, body, #app, .main-outer {
 .sidebar .stat-container {
   padding: 10px;
 
-  .king_icon {
-    height: 20px;
-    margin-right: 5px;
-  }
-
   table {
     margin: 0;
 
@@ -343,6 +338,28 @@ html, body, #app, .main-outer {
         display: flex;
         flex: 1;
         justify-content: center;
+
+        .highscore_img {
+          position: relative;
+          width: 20px;
+          margin-right: 5px;
+
+          .highscore_avatar {
+            height: 20px;
+            width: 20px;
+            border-radius: 10px;
+            position: absolute;
+            z-index: 2;
+          }
+
+          .king_icon {
+            height: 18px;
+            position: absolute;
+            left: 1px;
+            top: -12px;
+            z-index: 1;
+          }
+        }
 
         &:nth-child(2) {
           width: 125px;
