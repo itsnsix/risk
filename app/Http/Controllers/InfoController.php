@@ -66,8 +66,6 @@ class InfoController extends Controller
     // General stats for the site.
     public function statsIndex() {
         $totalTerritoryCount = Territory::query()->count();
-        $totalOccupationCount = Occupation::query()->where('active', true)->count();
-        $occupation = (float) number_format($totalOccupationCount / $totalTerritoryCount * 100, 1);
 
         $firstOccupation = Occupation::query()
             ->selectRaw('DATEDIFF(DATE(NOW()), DATE(api_created_at)) as days_since')
@@ -78,36 +76,19 @@ class InfoController extends Controller
             $day = 0;
         }
 
-        $angriest = User::query()
-            ->selectRaw('users.*, COUNT(user_id) as take_overs')
-            ->join('occupations', 'occupations.user_id', '=', 'users.id')
-            ->whereNotNull('previous_occupation')
-            ->groupBy('user_id')
-            ->orderBy('take_overs', 'DESC')
-            ->first();
-
-        $biggest = User::query()
-            ->selectRaw('users.*, SUM(size) as total_size')
-            ->join('occupations', 'occupations.user_id', '=', 'users.id')
-            ->join('territories', 'territories.id', '=', 'occupations.territory_id')
-            ->groupBy('user_id')
-            ->orderBy('total_size', 'DESC')
-            ->first();
-
-        $highestCount = User::query()
+        $highscore = User::query()
             ->selectRaw('users.*, COUNT(user_id) as occupations')
             ->join('occupations', 'occupations.user_id', '=', 'users.id')
             ->groupBy('user_id')
             ->where('active', true)
             ->orderBy('occupations', 'DESC')
-            ->first();
+            ->limit(3)
+            ->get();
 
         return response()->json([
-            'occupied_percentage' => $occupation,
             'day' => $day,
-            'angriest' => $angriest,
-            'biggest' => $biggest,
-            'highest_count' => $highestCount
+            'territory_count' => $totalTerritoryCount,
+            'highscore' => $highscore
         ], Response::HTTP_OK);
     }
 

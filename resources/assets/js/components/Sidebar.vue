@@ -3,31 +3,22 @@
         <div class="sidebar" v-show="show">
             <div class="sidebar-header">Day {{stats ? stats.day : '-'}}</div>
             <div class="stat-container" v-if="stats">
-                <div>
-                    <vue-easy-pie-chart line-cap="butt" track-color="#282A2E" bar-color="#C5C8C6" :line-width="5"
-                                        :percent="stats.occupied_percentage">
-                        <p class="pie-percentage">{{stats.occupied_percentage}}%</p>
-                        <p class="pie-subtitle">Conquered</p>
-                    </vue-easy-pie-chart>
-                </div>
-                <div>
-                    <table class="table">
-                        <tbody>
-                        <tr v-if="stats.highest_count">
-                            <td>Conqueror</td>
-                            <td><span><b :style="'color: ' + stats.highest_count.color">{{stats.highest_count.name}}</b></span></td>
-                        </tr>
-                        <tr v-if="stats.biggest">
-                            <td>Biggest</td>
-                            <td><span><b :style="'color: ' + stats.biggest.color">{{stats.biggest.name}}</b></span></td>
-                        </tr>
-                        <tr v-if="stats.angriest">
-                            <td>Angriest</td>
-                            <td><span><b :style="'color: ' + stats.angriest.color">{{stats.angriest.name}}</b></span></td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <table class="table">
+                    <tbody>
+                    <tr v-for="(user, index) in stats.highscore">
+                        <td>
+                            <img class="king_icon" v-if="!index" src="/images/crown.png"/>
+                            <b class="highscore_name" :style="'color: ' + user.color">{{user.name}}</b>
+                        </td>
+                        <td>
+                            <progress-line
+                                :color="user.color"
+                                :value="user.occupations"
+                                :max="stats.highscore ? stats.highscore[0].occupations : 0" />
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
             </div>
             <div v-else>
                 <div class="warning-label">Loading stats...</div>
@@ -63,11 +54,11 @@
 </template>
 
 <script>
-    import VueEasyPieChart from 'vue-easy-pie-chart';
+    import ProgressLine from './ProgressLine';
 
     export default {
         components:{
-            VueEasyPieChart,
+            ProgressLine,
         },
 
         data() {

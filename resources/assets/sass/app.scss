@@ -323,36 +323,12 @@ html, body, #app, .main-outer {
   }
 }
 
-.sidebar .vue-easy-pie-chart {
-  > .inner-text {
-    margin: 0;
-    line-height: inherit !important;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-
-    p {
-      margin: 0;
-    }
-
-    .pie-percentage {
-      font-size: 20px;
-    }
-
-    .pie-subtitle {
-      font-size: 12px;
-      margin-bottom: 12px;
-    }
-  }
-}
-
 .sidebar .stat-container {
-  display: flex;
-  padding: 10px 0;
+  padding: 10px;
 
-  > div {
-    flex: 1;
+  .king_icon {
+    height: 20px;
+    margin-right: 5px;
   }
 
   table {
@@ -364,10 +340,14 @@ html, body, #app, .main-outer {
       td {
         border: 0;
         padding: 7px 0;
-        width: 85px;
         display: flex;
+        flex: 1;
 
-        span {
+        &:nth-child(2) {
+          width: 125px;
+        }
+
+        .highscore_name {
           text-overflow: ellipsis;
           overflow: hidden;
           line-height: 20px;
@@ -375,6 +355,15 @@ html, body, #app, .main-outer {
         }
       }
     }
+  }
+}
+
+.progress-line {
+  width: 100%;
+
+  > .progress-fill {
+    height: 100%;
+    border-radius: 0 5px 5px 0;
   }
 }
 
