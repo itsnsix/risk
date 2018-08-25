@@ -342,6 +342,7 @@ html, body, #app, .main-outer {
         padding: 7px 0;
         display: flex;
         flex: 1;
+        justify-content: center;
 
         &:nth-child(2) {
           width: 125px;
