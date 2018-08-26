@@ -148,9 +148,13 @@ class InfoController extends Controller
                                 case 'AVATAR': $user->updateAvatar($entry['user']); break;
 
                                 // House commands
-                                case 'CREATE_HOUSE': break; // TODO Create a new house.
-                                case 'JOIN_HOUSE': $user->changeHouse($value); break;
-                                case 'LEAVE_HOUSE': $user->changeHouse(null); break;
+                                /* Disabled until house functionality is finished.
+                                case 'CREATE_HOUSE': $user->createHouse($value, $entry['created_at']); break;
+                                case 'HOUSE_IMAGE': $user->setHouseImage($value); break;
+                                case 'HOUSE_COLOR': $user->setHouseColor($value, $entry['created_at']); break;
+                                case 'JOIN_HOUSE': $user->changeHouse($value, $entry['created_at']); break;
+                                case 'LEAVE_HOUSE': $user->changeHouse(null, $entry['created_at']); break;
+                                */
                             }
                         }
                     }

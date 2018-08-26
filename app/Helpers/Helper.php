@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use App\House;
 use App\IgnoredEntry;
 use App\Occupation;
 use App\User;
@@ -72,20 +73,14 @@ class Helper {
 
     // Find a new unique user color (as hex).
     public static function randomUniqueHexColor() {
-        $color = '#' . strtoupper(dechex(rand(0x000000, 0xFFFFFF)));
+        $color = Helper::validateColor('#' . dechex(rand(0x000000, 0xFFFFFF)));
 
-        $user = User::query()->where('color', '=', $color)->exists();
-
-        // #18424C ocean color.
-        // #000000 border color.
-        // #FFFFFF Unoccupied color.
-        // #99d9EA transport color.
-        if ($user || strlen($color) !== 7 || in_array($color, ['#18424C', '#000000', '#99d9EA', '#FFFFFF'])) {
+        if (!$color) {
             // Inf. loop if more users than there are hex colors.
             return Helper::randomUniqueHexColor();
-        } else {
-            return $color;
         }
+
+        return $color;
     }
 
     // Check if a data entry has been imported before.
@@ -103,6 +98,7 @@ class Helper {
         return $entry;
     }
 
+    // Translate direction shorthands.
     public static function getDirection($key) {
         switch ($key) {
             case 'W':
@@ -129,6 +125,7 @@ class Helper {
         return $direction;
     }
 
+    // Group territory border groups together into connected clusters.
     public static function clusterGroups($groups) {
         $clusters = [];
 
@@ -156,5 +153,61 @@ class Helper {
         } else {
             return Helper::clusterGroups($clusters);
         }
+    }
+
+    // Remove the user from their house and disband it if they are the owner.
+    public static function leaveHouse($user) {
+         $house = House::find($user->house_id);
+         if (!$house) return false;
+
+        // If the user is the owner, disband the house.
+        if ($house->owner_id === $user->id) {
+            // Remove all the members.
+            User::query()
+                ->where('house_id', $house->id)
+                ->update([
+                    'house_id' => null
+                ]);
+
+            // Delete the house.
+            $house->delete();
+
+            return true;
+        } else {
+            // If not, just leave the house.
+            $user->house_id = null;
+            $user->save();
+        }
+
+        return true;
+    }
+
+    // Validate a string as a valid unique hex color.
+    public static function validateColor($colorIn) {
+        // #18424C ocean color.
+        // #000000 border color.
+        // #FFFFFF Unoccupied color.
+        // #99d9EA transport color.
+
+        preg_match_all("/^#(?>[a-fA-F0-9]{6}){1,2}$/", $colorIn, $matches);
+        if ($matches && count($matches[0]) > 0) {
+            $color = strtoupper($matches[0][0]);
+
+            $duplicateUserColor = User::query()->where('color', $color)->exists();
+            $duplicateHouseColor = House::query()->where('color', $color)->exists();
+
+            if ($duplicateUserColor
+                || $duplicateHouseColor
+                || substr($color,0,1) !== '#'
+                || strlen($color) !== 7
+                || in_array($color, ['#18424C', '#000000', '#99d9EA', '#FFFFFF'])
+            ) {
+                return null;
+            }
+
+            return $color;
+        }
+
+        return null;
     }
 }
