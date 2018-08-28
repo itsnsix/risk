@@ -35,10 +35,11 @@
 
                         <div class="info-section">
                             <p><b><u>Commands available:</u></b></p>
+                            <p><b>START:ID</b></p> - Change ID to actual territory ID. Set your starting position for your first territory. Only works on unoccupied territories.
+                            You start in a random unoccupied area if not given (or completely random if the map is full).
+                            <p><b>COLOR:#000000</b></p> - Change #000000 to desired color. Changes your map and name color.
                             <p><b>MOVE:DIRECTION</b></p> - Change DIRECTION to (N, S, W, E, NORTH, SOUTH, WEST or EAST). You'll expand in the given direction.
                             <p><b>TAKE:ID</b></p> - Change ID to actual territory ID. You'll expand to given territory. This only works if your territory borders to it.
-                            <p><b>COLOR:#000000</b></p> - Change #000000 to desired color. Changes your map and name color.
-                            <p><b>START:ID</b></p> - Change ID to actual territory ID. Changes your starting position for when you're wiped off the map and restart.
                             <p><b>AVATAR:UPDATE</b></p> - Force your avatar to be updated on the map from the main site.
                         </div>
                     </div>

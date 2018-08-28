@@ -19,11 +19,9 @@ class CreateUsersTable extends Migration
             $table->string('name');
             $table->string('color')->unique();
             $table->string('image')->nullable();
-            $table->unsignedInteger('starting_territory')->nullable();
             $table->unsignedInteger('house_id')->nullable();
             $table->timestamps();
 
-            $table->foreign('starting_territory')->references('id')->on('territories');
             $table->foreign('house_id')->references('id')->on('houses');
         });
     }

@@ -22,8 +22,4 @@ class Territory extends Model
     public function occupation() {
         return $this->hasOne(Occupation::class)->where('active', true);
     }
-
-    public function starter() {
-        return $this->hasOne(User::class, 'starting_territory');
-    }
 }

@@ -119,7 +119,7 @@ class InfoController extends Controller
             if (!Helper::findImportedID($entry['id'])) {
                 $direction = 'RANDOM';
                 $territoryID = null;
-                $forceStart = false;
+                $startPos = null;
 
                 $commands = isset($entry['api_command']) ? $entry['api_command'] : null;
                 if ($commands) {
@@ -142,8 +142,7 @@ class InfoController extends Controller
                                 // User changes
                                 case 'COLOR': $user->changeColor($value, $entry['created_at']); break;
                                 case 'START':
-                                    $user->changeStartingPosition($value, $entry['created_at']);
-                                    $forceStart = true;
+                                    $startPos = $value;
                                     break;
                                 case 'AVATAR': $user->updateAvatar($entry['user']); break;
 
@@ -159,7 +158,7 @@ class InfoController extends Controller
                     }
                 }
 
-                $this->expandTerritory($user, $entry['id'], $entry['created_at'], $direction, $territoryID, $forceStart);
+                $this->expandTerritory($user, $entry['id'], $entry['created_at'], $direction, $territoryID, $startPos);
                 $this->cleanupClusters($entry['created_at']); // Severe performance hit
                 $importCount++;
             }
@@ -171,8 +170,8 @@ class InfoController extends Controller
     }
 
     // Expand a user's territory.
-    public function expandTerritory(User $user, $dataID, $submittedAt, $direction, $territoryID, $forceStart) {
-        $expansion = $this->findExpansion($user, $direction, $territoryID, $submittedAt, $forceStart);
+    public function expandTerritory(User $user, $dataID, $submittedAt, $direction, $territoryID, $startPos) {
+        $expansion = $this->findExpansion($user, $direction, $territoryID, $submittedAt, $startPos);
         $territory = $expansion['territory'];
         $expansion = $expansion['status']; // START || EXPAND || EXHAUSTED
 
@@ -276,7 +275,7 @@ class InfoController extends Controller
     }
 
     // Find a territory for the user to expand to.
-    public function findExpansion(User $user, $direction, $territoryID, $submittedAt, $forceStart) {
+    public function findExpansion(User $user, $direction, $territoryID, $submittedAt, $startPos) {
         // TODO Don't expand into territories owned by your own house, treat them as your own.
 
         $territories = Territory::query()
@@ -288,7 +287,7 @@ class InfoController extends Controller
 
         // User's first post
         if (!$territories->count()) {
-            return ['territory' => $user->findStartingSpot($forceStart), 'status' => 'START'];
+            return ['territory' => $user->findStartingSpot($startPos), 'status' => 'START'];
         } else {
             // Get number of entries already submitted on the same day as this entry.
             $expansionsToday = Occupation::query()

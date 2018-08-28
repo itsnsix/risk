@@ -68,31 +68,6 @@ class User extends Model
         return true;
     }
 
-    // Change the user's starting spot.
-    public function changeStartingPosition($territoryID, $submittedAt) {
-        $territory = Territory::find($territoryID);
-
-        if ($territory) {
-            $eventText = "<p><b style='color: $this->color'>$this->name</b>"
-                . " has set their starting point to <b>T$territoryID</b>.</p>";
-
-            $this->starting_territory = $territoryID;
-            $this->save();
-
-            $event = new Event([
-                'user_id' => $this->id,
-                'text' => $eventText,
-                'timestamp' => $submittedAt
-            ]);
-            $event->save();
-
-            return true;
-        } else {
-            Log::info('Failed starting position change: ' . $this->name . ' -> ' . $territoryID);
-            return false;
-        }
-    }
-
     // Change which house user belongs to.
     public function changeHouse($houseID, $submittedAt) {
         $existingHouse = House::find($this->house_id);
@@ -141,25 +116,20 @@ class User extends Model
     }
 
     // Find starting territory for user.
-    public function findStartingSpot($force = false) {
+    public function findStartingSpot($territoryID) {
         $territory = null;
 
-        if ($this->starting_territory) {
-            // Forced start regardless of occupation.
-            if ($force) {
-                $territory = Territory::query()
-                    ->where('id', '=', $this->starting_territory)
-                    ->first();
-            } else {
-                // Check if user's starting territory is unclaimed.
-                $territory = Territory::query()
-                    ->where('id', '=', $this->starting_territory)
-                    ->whereDoesntHave('occupation')
-                    ->first();
-            }
+        // TODO Don't allow user to start in land belonging to own house members.
+
+        // Check if wanted territory is unclaimed.
+        if ($territoryID) {
+            $territory = Territory::query()
+                ->where('id', '=', $territoryID)
+                ->whereDoesntHave('occupation')
+                ->first();
         }
 
-        // If it's occupied or no starting position, try finding a random unclaimed territory.
+        // If wanted territory is claimed or not provided, try finding a random unclaimed territory.
         if (!$territory) {
             $territory = Territory::query()
                 ->whereDoesntHave('occupation')
@@ -167,20 +137,14 @@ class User extends Model
                 ->first();
         }
 
-        // No more unclaimed territory, return user's starting position or a completely random territory.
+        // No more unclaimed territory, just place the user randomly on the map.
         if (!$territory) {
-            if ($this->starting_territory) {
-                $territory = Territory::query()
-                    ->where('id', '=', $this->starting_territory)
-                    ->first();
-            } else {
-                $lastTerritoryID = Territory::query()
-                    ->orderBy('id', 'DESC')
-                    ->first()->id;
-                $id = rand(1, $lastTerritoryID);
+            $lastTerritoryID = Territory::query()
+                ->orderBy('id', 'DESC')
+                ->first()->id;
+            $id = rand(1, $lastTerritoryID);
 
-                $territory = Territory::find($id);
-            }
+            $territory = Territory::find($id);
         }
 
         return $territory;
