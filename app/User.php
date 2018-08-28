@@ -148,28 +148,35 @@ class User extends Model
             // Forced start regardless of occupation.
             if ($force) {
                 $territory = Territory::query()
-                    ->where('id', '=', $this->starting_territory);
+                    ->where('id', '=', $this->starting_territory)
+                    ->first();
             } else {
                 // Check if user's starting territory is unclaimed.
                 $territory = Territory::query()
                     ->where('id', '=', $this->starting_territory)
-                    ->whereDoesntHave('occupation')->first();
+                    ->whereDoesntHave('occupation')
+                    ->first();
             }
         }
 
         // If it's occupied or no starting position, try finding a random unclaimed territory.
         if (!$territory) {
             $territory = Territory::query()
-                ->whereDoesntHave('occupation')->inRandomOrder()->first();
+                ->whereDoesntHave('occupation')
+                ->inRandomOrder()
+                ->first();
         }
 
         // No more unclaimed territory, return user's starting position or a completely random territory.
         if (!$territory) {
             if ($this->starting_territory) {
                 $territory = Territory::query()
-                    ->where('id', '=', $this->starting_territory);
+                    ->where('id', '=', $this->starting_territory)
+                    ->first();
             } else {
-                $lastTerritoryID = Territory::query()->orderBy('id', 'DESC')->first()->id;
+                $lastTerritoryID = Territory::query()
+                    ->orderBy('id', 'DESC')
+                    ->first()->id;
                 $id = rand(1, $lastTerritoryID);
 
                 $territory = Territory::find($id);
