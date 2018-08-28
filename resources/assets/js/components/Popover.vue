@@ -3,7 +3,7 @@
         <div class="territory-popover" v-if="data"
              :style="{'top': data.y + 'px', 'left': data.x + 'px'}">
             <div class="popover-title" :style="getTitleColor(data.territory.occupation)">
-                <img v-if="data.territory.occupation" :src="getAvatar(data.territory.occupation)"/>
+                <img v-if="data.territory.occupation && !data.territory.occupation.user.house" :src="getAvatar(data.territory.occupation)"/>
                 <span :style="data.territory.occupation ? '' : 'color: #1D1F21; text-shadow: none;'">
                     {{getTitle(data.territory.occupation)}}
                 </span>
@@ -12,7 +12,7 @@
 
             <div class="popover-subtitle" v-if="data.territory.occupation && data.territory.occupation.user.house"
                  :style="{'background-color': data.territory.occupation.user.color}">
-                <img v-if="data.territory.occupation" :src="getUserAvatar(data.territory.occupation)"/>
+                <img v-if="data.territory.occupation" :src="getAvatar(data.territory.occupation)"/>
                 <span :style="data.territory.occupation ? '' : 'color: #1D1F21; text-shadow: none;'">
                     {{data.territory.occupation.user.name}}
                 </span>
@@ -69,30 +69,8 @@
             },
 
             getAvatar: function(occupation) {
-                let img = '/images/default_avatar.png';
-
-                if (occupation) {
-                    if (occupation.user.house) {
-                        if (occupation.user.house.image) {
-                            img = occupation.user.house.image;
-                        }
-                    } else if (occupation.user.image) {
-                        img = occupation.user.image;
-                    }
-                }
-
-                return img;
+                return occupation && occupation.user.image ? occupation.user.image : '/images/default_avatar.png';
             },
-
-            getUserAvatar: function(occupation) {
-                let img = '/images/default_avatar.png';
-
-                if (occupation && occupation.user.image) {
-                    img = occupation.user.image;
-                }
-
-                return img;
-            }
         }
     }
 </script>

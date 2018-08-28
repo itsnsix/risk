@@ -20,18 +20,12 @@ function buildLabel(territory) {
     if (size > 40) size = 40;
     if (size < 10) size = 10;
 
-    let avatar = '/images/default_avatar.png';
-    if (territory.occupation.user.house && territory.occupation.user.house.image) {
-        avatar = territory.occupation.user.house.image;
-    } else if (!territory.occupation.user.house && territory.occupation.user.image) {
-        avatar = territory.occupation.user.image;
-    }
-
     return {
         territory: territory,
         x: territory.x - (size / 2),
         y: territory.y - (size / 2),
-        avatar: avatar,
+        avatar: territory.occupation && territory.occupation.user.image
+            ? territory.occupation.user.image : '/images/default_avatar.png',
         size: size
     };
 }

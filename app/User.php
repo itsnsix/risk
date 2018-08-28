@@ -213,19 +213,6 @@ class User extends Model
         // TODO Create house, leave current house if in one.
     }
 
-    // Change image of user's owned house.
-    public function setHouseImage($image) {
-        $house = House::find($this->house_id);
-
-        if (!$house || $house->owner_id !== $this->id) { // Not in a house or not the owner of their house.
-            return false;
-        }
-
-        // TODO Check image, save it locally if it's a valid image and give it to house.
-
-        return true;
-    }
-
     // Change color of user's owned house.
     public function setHouseColor($colorIn) {
         $house = House::find($this->house_id);

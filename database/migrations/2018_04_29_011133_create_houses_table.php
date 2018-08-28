@@ -17,7 +17,6 @@ class CreateHousesTable extends Migration
             $table->increments('id');
             $table->string('name');
             $table->string('color');
-            $table->string('image')->nullable();
             $table->timestamps();
         });
     }

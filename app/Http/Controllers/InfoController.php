@@ -150,7 +150,6 @@ class InfoController extends Controller
                                 // House commands
                                 /* Disabled until house functionality is finished.
                                 case 'CREATE_HOUSE': $user->createHouse($value, $entry['created_at']); break;
-                                case 'HOUSE_IMAGE': $user->setHouseImage($value); break;
                                 case 'HOUSE_COLOR': $user->setHouseColor($value, $entry['created_at']); break;
                                 case 'JOIN_HOUSE': $user->changeHouse($value, $entry['created_at']); break;
                                 case 'LEAVE_HOUSE': $user->changeHouse(null, $entry['created_at']); break;
