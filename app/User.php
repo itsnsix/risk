@@ -68,53 +68,6 @@ class User extends Model
         return true;
     }
 
-    // Change which house user belongs to.
-    public function changeHouse($houseID, $submittedAt) {
-        $existingHouse = House::find($this->house_id);
-
-        if (!$houseID) {
-            if ($existingHouse) {
-                // User is just leaving their current house.
-
-                if (Helper::leaveHouse($this)) {
-                    $eventText = "<p><b style='color: $this->color'>$this->name</b>"
-                        . " has disbanded <b style='color: $existingHouse->color'>$existingHouse->name</b>.</p>";
-                } else {
-                    $eventText = "<p><b style='color: $this->color'>$this->name</b>"
-                        . " has left <b style='color: $existingHouse->color'>$existingHouse->name</b>.</p>";
-                }
-            }
-        } else {
-            $house = House::query()
-                ->where('id', $houseID)
-                ->orWhere('name', $houseID)
-                ->first();
-
-            if ($this->house_id) {
-                // Hopping from one house to another.
-                $eventText = "<p><b style='color: $this->color'>$this->name</b>"
-                    . " has left <b style='color: $existingHouse->color'>$existingHouse->name</b>"
-                    . " and joined <b style='color: $house->color'>$house->name</b>.</p>";
-            } else {
-                // Solo player joining house.
-                $eventText = "<p><b style='color: $this->color'>$this->name</b>"
-                    . " has joined <b style='color: $house->color'>$house->name</b>.</p>";
-            }
-
-            $this->house_id = $house->id;
-            $this->save();
-        }
-
-        $event = new Event([
-            'user_id' => $this->id,
-            'text' => $eventText,
-            'timestamp' => $submittedAt
-        ]);
-        $event->save();
-
-        return true;
-    }
-
     // Find starting territory for user.
     public function findStartingSpot($territoryID) {
         $territory = null;
@@ -181,11 +134,84 @@ class User extends Model
 
     // Create a new house.
     public function createHouse($name, $submittedAt) {
-        // TODO Create house, leave current house if in one.
+        $existingHouse = House::find($this->house_id);
+
+        // User is leaving their current house.
+        if ($existingHouse) {
+            Helper::leaveHouse($this, $submittedAt);
+        }
+
+        if (Helper::validateHouseName($name)) {
+            // Create the new house.
+            $house = new House([
+                'owner_id' => $this->id,
+                'color' => Helper::randomUniqueHexColor(),
+                'name' => $name
+            ]);
+            $house->save();
+            $house->fresh(); // Get the ID.
+
+            // Join the house that was just created.
+            $this->house_id = $house->id;
+            $this->save();
+
+            $eventText = "<p><b style='color: $this->color'>$this->name</b>"
+                . " has founded the <b style='color: $house->color'>$house->name</b> house.</p>";
+
+            $event = new Event([
+                'user_id' => $this->id,
+                'text' => $eventText,
+                'timestamp' => $submittedAt
+            ]);
+            $event->save();
+
+            return true;
+        } else return false;
+    }
+
+    // Change which house user belongs to.
+    public function joinHouse($houseID, $submittedAt) {
+        $existingHouse = House::find($this->house_id);
+
+        // User is already in this house.
+        if ($existingHouse && $existingHouse->id === $houseID) return false;
+
+        // User is leaving their current house.
+        if (!$houseID || $existingHouse) {
+            Helper::leaveHouse($this, $submittedAt);
+
+            // Stop if not joining another house.
+            if (!$houseID) return true;
+        }
+
+        $house = House::query()
+            ->where('id', $houseID)
+            ->orWhere('name', 'like', '%' . $houseID  . '%')
+            ->first();
+
+        if ($house) {
+            $this->house_id = $house->id;
+
+            if($this->save()) {
+                $eventText = "<p><b style='color: $this->color'>$this->name</b>"
+                    . " has joined the <b style='color: $house->color'>$house->name</b> house.</p>";
+
+                $event = new Event([
+                    'user_id' => $this->id,
+                    'text' => $eventText,
+                    'timestamp' => $submittedAt
+                ]);
+                $event->save();
+
+                return true;
+            } else return false;
+        }
+
+        return false;
     }
 
     // Change color of user's owned house.
-    public function setHouseColor($colorIn) {
+    public function setHouseColor($colorIn, $submittedAt) {
         $house = House::find($this->house_id);
 
         if (!$house || $house->owner_id !== $this->id) { // Not in a house or not the owner of their house.
@@ -194,11 +220,23 @@ class User extends Model
 
         $color = Helper::validateColor($colorIn);
         if ($color) {
+            $eventText = "<p><b style='color: $house->color'>$house->name</b>"
+                . " has changed their color to <b style='color: $color'>$color</b>.</p>";
+
             $house->color = $color;
-            $house->save();
-            return true;
+            if($house->save()) {
+
+                $event = new Event([
+                    'user_id' => $this->id,
+                    'text' => $eventText,
+                    'timestamp' => $submittedAt
+                ]);
+                $event->save();
+
+                return true;
+            } else return false;
         } else {
-            Log::info('Illegal color change: ' . $house->name . ' -> ' . $colorIn);
+            Log::info('Illegal house color change: ' . $house->name . ' -> ' . $colorIn);
             return false;
         }
     }

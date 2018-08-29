@@ -2,10 +2,12 @@
 
 namespace App\Helpers;
 
+use App\Event;
 use App\House;
 use App\IgnoredEntry;
 use App\Occupation;
 use App\User;
+use Illuminate\Support\Facades\Log;
 
 class Helper {
     // Get prepared url for data entry end point.
@@ -44,7 +46,7 @@ class Helper {
         // Avoid loading huge batches of entries in one request.
         $batchSize = env('DATA_BATCH_SIZE', 200);
         if ($batchSize) {
-            $url .= '&to=' . ($from + $batchSize);
+            $url .= '&to=' . ($from + $batchSize - 1);
         }
 
         return $url;
@@ -156,7 +158,7 @@ class Helper {
     }
 
     // Remove the user from their house and disband it if they are the owner.
-    public static function leaveHouse($user) {
+    public static function leaveHouse($user, $submittedAt) {
          $house = House::find($user->house_id);
          if (!$house) return false;
 
@@ -172,12 +174,24 @@ class Helper {
             // Delete the house.
             $house->delete();
 
-            return true;
+            $eventText = "<p><b style='color: $user->color'>$user->name</b>"
+                . " has disbanded the <b style='color: $house->color'>$house->name</b> house.</p>";
+
         } else {
             // If not, just leave the house.
             $user->house_id = null;
             $user->save();
+
+            $eventText = "<p><b style='color: $user->color'>$user->name</b>"
+                . " has left the <b style='color: $house->color'>$house->name</b> house.</p>";
         }
+
+        $event = new Event([
+            'user_id' => $user->id,
+            'text' => $eventText,
+            'timestamp' => $submittedAt
+        ]);
+        $event->save();
 
         return true;
     }
@@ -209,5 +223,22 @@ class Helper {
         }
 
         return null;
+    }
+
+    public static function validateHouseName($name) {
+        // Check length.
+        if (strlen($name) > env('MAX_HOUSE_NAME_LENGTH', 24)) {
+            Log::info('Illegal house name: ' . $name);
+            return false;
+        }
+
+        // Check if another house already exists with this name.
+        $duplicateName = House::query()->where('name', $name)->first();
+        if ($duplicateName) {
+            Log::info('Duplicate house name: ' . $name);
+            return false;
+        }
+
+        return true;
     }
 }

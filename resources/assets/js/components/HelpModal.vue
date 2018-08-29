@@ -30,7 +30,7 @@
                         <div class="info-section">
                             For more control, go to your user page and hit the checkbox labeled <b>"Enable External API"</b>.
                             This will give you an input field for commands when you submit your images.
-                            All commands are given in the format of <b>COMMAND:VALUE</b>, and multiple commands can be sent at once with a <b>,</b> separating them i.e <b>MOVE:NORTH,COLOR:#23E4DF</b>
+                            All commands are given in the format of <b>COMMAND:VALUE</b>, and multiple commands can be sent at once with a <b>,</b> separating them i.e <b>MOVE:NORTH,COLOR:#23E4DF,UPDATE_AVATAR</b>
                         </div>
 
                         <div class="info-section">
@@ -40,7 +40,7 @@
                             <p><b>COLOR:#000000</b></p> - Change #000000 to desired color. Changes your map and name color.
                             <p><b>MOVE:DIRECTION</b></p> - Change DIRECTION to (N, S, W, E, NORTH, SOUTH, WEST or EAST). You'll expand in the given direction.
                             <p><b>TAKE:ID</b></p> - Change ID to actual territory ID. You'll expand to given territory. This only works if your territory borders to it.
-                            <p><b>AVATAR:UPDATE</b></p> - Force your avatar to be updated on the map from the main site.
+                            <p><b>UPDATE_AVATAR</b></p> - Force your avatar to be updated on the map from the main site.
                         </div>
                     </div>
                 </div>

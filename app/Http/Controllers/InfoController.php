@@ -122,17 +122,18 @@ class InfoController extends Controller
                 $startPos = null;
 
                 $commands = isset($entry['api_command']) ? $entry['api_command'] : null;
+
                 if ($commands) {
                     Log::info('[COMMAND] ' . $user->name . ': ' . $commands);
 
-                    // Structure: 'MOVE:NORTH,COLOR:#23E4DF'
+                    // Structure: 'MOVE:NORTH,COLOR:#23E4DF,UPDATE_AVATAR'
                     $commands = explode(',', $commands);
 
                     foreach($commands as $command) {
                         $command = explode(':', $command);
-                        if (count($command) === 2) { // Ignore commands not properly formatted
+                        if (count($command) <= 2) { // Ignore commands not properly formatted
                             $action = strtoupper($command[0]);
-                            $value = $command[1];
+                            $value = count($command) > 1 ? $command[1] : null;
 
                             switch($action) {
                                 // Expansion commands
@@ -144,14 +145,14 @@ class InfoController extends Controller
                                 case 'START':
                                     $startPos = $value;
                                     break;
-                                case 'AVATAR': $user->updateAvatar($entry['user']); break;
+                                case 'UPDATE_AVATAR': $user->updateAvatar($entry['user']); break;
 
                                 // House commands
                                 /* Disabled until house functionality is finished.
                                 case 'CREATE_HOUSE': $user->createHouse($value, $entry['created_at']); break;
                                 case 'HOUSE_COLOR': $user->setHouseColor($value, $entry['created_at']); break;
-                                case 'JOIN_HOUSE': $user->changeHouse($value, $entry['created_at']); break;
-                                case 'LEAVE_HOUSE': $user->changeHouse(null, $entry['created_at']); break;
+                                case 'JOIN_HOUSE': $user->joinHouse($value, $entry['created_at']); break;
+                                case 'LEAVE_HOUSE': $user->joinHouse(null, $entry['created_at']); break;
                                 */
                             }
                         }
