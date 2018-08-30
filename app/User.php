@@ -154,7 +154,7 @@ class User extends Model
                 ->map(function ($b) {return $b->id;})
                 ->concat($t->borderedTo->map(function ($b) {return $b->id;}));
             $borders->push($t->id);
-            $borders = $borders->filter(function($id) use ($territoryIDs) {
+            $borders = $borders->filter(function ($id) use ($territoryIDs) {
                 return $territoryIDs->contains($id);
             })->values();
             $groups[] = $borders->values()->all();

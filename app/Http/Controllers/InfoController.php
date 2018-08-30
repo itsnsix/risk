@@ -48,7 +48,7 @@ class InfoController extends Controller
                 DB::raw("CONCAT(territories.x, '-', territories.y) as location"),
                 DB::raw('GROUP_CONCAT(IF(borders.territory_id = territories.id, borders.bordering_id, borders.territory_id)) AS border_ids')
             )
-            ->leftJoin('borders', function(JoinClause $join) {
+            ->leftJoin('borders', function (JoinClause $join) {
                 $join->on('borders.territory_id', '=', 'territories.id');
                 $join->orOn('borders.bordering_id', '=', 'territories.id');
             })
@@ -56,7 +56,7 @@ class InfoController extends Controller
             ->groupBy('territories.id')
             ->get();
 
-        $ts->each(function($t) {
+        $ts->each(function ($t) {
             $t->borders = Territory::query()->whereIn('id', explode(',', $t->border_ids))->get();
         });
 
@@ -277,16 +277,26 @@ class InfoController extends Controller
 
     // Find a territory for the user to expand to.
     public function findExpansion(User $user, $direction, $territoryID, $submittedAt, $startPos) {
-        // TODO Don't expand into territories owned by your own house, treat them as your own.
+        if ($user->house_id) {
+            // Treat territories owned by your own house as your own.
+            $territories = Territory::query()
+                ->join('occupations', 'occupations.territory_id', '=', 'territories.id')
+                ->join('users', 'users.id', '=', 'occupations.user_id')
+                ->whereHas('occupation', function (Builder $query) use ($user) {
+                    $query->where('house_id', '=', $user->house_id);
+                })
+                ->with('borders.occupation.user', 'borderedTo.occupation.user')
+                ->get();
+        } else {
+            $territories = Territory::query()
+                ->whereHas('occupation', function (Builder $query) use ($user) {
+                    $query->where('user_id', '=', $user->id);
+                })
+                ->with('borders.occupation.user', 'borderedTo.occupation.user')
+                ->get();
+        }
 
-        $territories = Territory::query()
-            ->whereHas('occupation', function (Builder $query) use ($user) {
-                $query->where('user_id', '=', $user->id);
-            })
-            ->with('borders.occupation.user', 'borderedTo.occupation.user')
-            ->get();
-
-        // User's first post
+        // User or house's first post
         if (!$territories->count()) {
             return ['territory' => $user->findStartingSpot($startPos), 'status' => 'START'];
         } else {
@@ -306,7 +316,11 @@ class InfoController extends Controller
             foreach ($territories as $territory) {
                 $borderTerritories = $territory->borders->merge($territory->borderedTo);
                 foreach ($borderTerritories as $border) {
-                    if (!$border->occupation || $border->occupation->user_id !== $user->id) {
+                    $checker = $user->house_id ? $border->occupation->user->house_id : $border->occupation->user->id;
+                    $checkAgainst = $user->house_id || $user->id;
+
+                    // If you or your house don't currently occupy this border
+                    if (!$border->occupation || $checker !== $checkAgainst) {
                         if ($territoryID && $territoryID == $border->id) { // Take specific wanted territory by ID.
                             return ['territory' => $border, 'status' => 'EXPAND'];
                         }
@@ -321,7 +335,7 @@ class InfoController extends Controller
                 // Directional expansion do not care if the territory is occupied or not already.
                 case 'W':
                 case 'WEST': {
-                    $bestTerritory = array_reduce($borders, function($a, $b){
+                    $bestTerritory = array_reduce ($borders, function($a, $b){
                         return $a ? ($a->x < $b->x ? $a : $b) : $b;
                     });
                     return ['territory' => $bestTerritory, 'status' => 'EXPAND'];
@@ -329,7 +343,7 @@ class InfoController extends Controller
                 }
                 case 'N':
                 case 'NORTH': {
-                    $bestTerritory = array_reduce($borders, function($a, $b){
+                    $bestTerritory = array_reduce ($borders, function($a, $b){
                         return $a ? ($a->y < $b->y ? $a : $b) : $b;
                     });
                     return ['territory' => $bestTerritory, 'status' => 'EXPAND'];
@@ -337,7 +351,7 @@ class InfoController extends Controller
                 }
                 case 'E':
                 case 'EAST': {
-                    $bestTerritory = array_reduce($borders, function($a, $b){
+                    $bestTerritory = array_reduce ($borders, function($a, $b){
                         return $a ? ($a->x > $b->x ? $a : $b) : $b;
                     });
                     return ['territory' => $bestTerritory, 'status' => 'EXPAND'];
@@ -345,7 +359,7 @@ class InfoController extends Controller
                 }
                 case 'S':
                 case 'SOUTH': {
-                    $bestTerritory = array_reduce($borders, function($a, $b){
+                    $bestTerritory = array_reduce ($borders, function($a, $b){
                         return $a ? ($a->y > $b->y ? $a : $b) : $b;
                     });
                     return ['territory' => $bestTerritory, 'status' => 'EXPAND'];
@@ -354,7 +368,7 @@ class InfoController extends Controller
                 default: { // Expand randomly to a border. Prefers unoccupied territories.
                     $unclaimed = Territory::query()
                         ->whereDoesntHave('occupation')
-                        ->whereIn('id', collect($borders)->map(function($item) {return $item->id;}))
+                        ->whereIn('id', collect($borders)->map(function ($item) { return $item->id; }))
                         ->get();
 
                     // If there's free land available, take it.
