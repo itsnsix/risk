@@ -183,6 +183,8 @@ class Helper {
             $user->house_id = null;
             $user->save();
 
+            // TODO Transfer user's territories to house owner.
+
             $eventText = "<p><b style='color: $user->color'>$user->name</b>"
                 . " has left the <b style='color: $house->color'>$house->name</b> house.</p>";
         }
@@ -229,7 +231,8 @@ class Helper {
     // Validate a new house name.
     public static function validateHouseName($name) {
         // Check length.
-        if (strlen($name) > env('MAX_HOUSE_NAME_LENGTH', 24)) {
+        $len = strlen($name);
+        if ($len === 0 || $len > env('MAX_HOUSE_NAME_LENGTH', 24)) {
             Log::info('Illegal house name: ' . $name);
             return false;
         }

@@ -41,6 +41,11 @@
                             <p><b>MOVE:DIRECTION</b></p> - Change DIRECTION to (N, S, W, E, NORTH, SOUTH, WEST or EAST). You'll expand in the given direction.
                             <p><b>TAKE:ID</b></p> - Change ID to actual territory ID. You'll expand to given territory. This only works if your territory borders to it.
                             <p><b>UPDATE_AVATAR</b></p> - Force your avatar to be updated on the map from the main site.
+
+                            <p><b>CREATE_HOUSE:NAME</b></p> - Change NAME to actual house name. Creates a new house under your command. Your map color will now be the house's color and other users can join your house. House allies act much like a single player would on the map. Taking an ally's territory is impossible. Your house starts with a random color.
+                            <p><b>HOUSE_COLOR:#000000</b></p> - Change #000000 to desired color. Changes your current house's map and name color. Only works if you own the house you're in.
+                            <p><b>JOIN_HOUSE:NAME</b></p> - Change NAME to actual house name. Join an existing house. Be aware that house territories need to be connected, so if you join a house you don't already border, the house will get cut, keeping the largest cluster.
+                            <p><b>LEAVE_HOUSE</b></p> - Leaves your current house. Disbands the house if you own it. All your territory will be transferred to house owner upon leaving.
                         </div>
                     </div>
                 </div>
