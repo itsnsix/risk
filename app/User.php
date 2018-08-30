@@ -121,23 +121,38 @@ class User extends Model
 
     // Find all the clusters a user controls.
     public function territoryClusters() {
-        // TODO Include territories owned by house allies.
-
         $userID = $this->id;
+        $houseID = $this->house_id;
 
         // Get all territories
-        $territories = Territory::query()
-            ->whereHas('occupation', function (Builder $query) use ($userID) {
-                $query->where('user_id', '=', $userID);
-            })
-            ->with('borders', 'borderedTo')
-            ->get();
+        if ($houseID) {
+            // If a user joins a house they don't currently border, the smallest user in the house will be cut off.
+            $territories = Territory::query()
+                ->select('territories.id')
+                ->join('occupations', 'occupations.territory_id', '=', 'territories.id')
+                ->join('users', 'users.id', '=', 'occupations.user_id')
+                ->whereHas('occupation', function (Builder $query) use ($houseID) {
+                    $query->where('house_id', '=', $houseID);
+                })
+                ->with('borders', 'borderedTo')
+                ->get();
+        } else {
+            $territories = Territory::query()
+                ->select('territories.id')
+                ->whereHas('occupation', function (Builder $query) use ($userID) {
+                    $query->where('user_id', '=', $userID);
+                })
+                ->with('borders', 'borderedTo')
+                ->get();
+        }
         $territoryIDs = $territories->map(function ($t) {return $t->id;});
 
         // Create simple ID array groups of territories borders + itself.
         $groups = [];
         foreach ($territories as $t) {
-            $borders = $t->borders->map(function ($b) {return $b->id;})->concat($t->borderedTo->map(function ($b) {return $b->id;}));
+            $borders = $t->borders
+                ->map(function ($b) {return $b->id;})
+                ->concat($t->borderedTo->map(function ($b) {return $b->id;}));
             $borders->push($t->id);
             $borders = $borders->filter(function($id) use ($territoryIDs) {
                 return $territoryIDs->contains($id);
