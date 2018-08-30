@@ -183,7 +183,26 @@ class Helper {
             $user->house_id = null;
             $user->save();
 
-            // TODO Transfer user's territories to house owner.
+            // Transfer user's territories to house owner.
+            $surrenderedTerritories = Occupation::query()
+                ->where([
+                    ['active', true],
+                    ['user_id', $user->id]
+                ])->get();
+
+            foreach($surrenderedTerritories as $occupation) {
+                $occupation->active = false;
+                $occupation->save();
+
+                $takeover = new Occupation([
+                    'user_id' => $house->owner_id,
+                    'active' => true,
+                    'api_created_at' => $submittedAt,
+                    'territory_id' => $occupation->territory_id,
+                    'previous_occupation' => $occupation->id
+                ]);
+                $takeover->save();
+            }
 
             $eventText = "<p><b style='color: $user->color'>$user->name</b>"
                 . " has left the <b style='color: $house->color'>$house->name</b> house.</p>";
@@ -195,6 +214,22 @@ class Helper {
             'timestamp' => $submittedAt
         ]);
         $event->save();
+
+        if (isset($surrenderedTerritories) && $surrenderedTerritories->count()) {
+            $count = $surrenderedTerritories->count();
+            $owner = User::find($house->owner_id);
+            $ts = $count === 1 ? 'territory' : 'territories';
+
+            $eventText = "<p><b style='color: $user->color'>$user->name</b>"
+                . " has <b>left $count $ts</b> to <b style='color: $owner->color'>$owner->name</b>.</p>";
+
+            $event = new Event([
+                'user_id' => $user->id,
+                'text' => $eventText,
+                'timestamp' => $submittedAt
+            ]);
+            $event->save();
+        }
 
         return true;
     }
