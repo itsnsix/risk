@@ -72,8 +72,6 @@ class User extends Model
     public function findStartingSpot($territoryID) {
         $territory = null;
 
-        // TODO Don't allow user to start in land belonging to own house members.
-
         // Check if wanted territory is unclaimed.
         if ($territoryID) {
             $territory = Territory::query()
@@ -95,7 +93,25 @@ class User extends Model
             $lastTerritoryID = Territory::query()
                 ->orderBy('id', 'DESC')
                 ->first()->id;
-            $id = rand(1, $lastTerritoryID);
+
+
+            if ($this->house_id) {
+                // Remove house controlled territories from available starting spots.
+                $houseTerritories = Helper::findHouseterritoryIDs($this->house_id);
+
+                $ids = range(1, $lastTerritoryID);
+
+                $ids = array_filter($ids, function ($value) use ($houseTerritories) {
+                    return !in_array($value, $houseTerritories);
+                });
+
+                if (count($ids)) {
+                    $id = array_rand($ids);
+                } else $id = null;
+            } else {
+                // User has no house, can start anywhere.
+                $id = rand(1, $lastTerritoryID);
+            }
 
             $territory = Territory::find($id);
         }

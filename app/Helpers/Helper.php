@@ -6,6 +6,7 @@ use App\Event;
 use App\House;
 use App\IgnoredEntry;
 use App\Occupation;
+use App\Territory;
 use App\User;
 use Illuminate\Support\Facades\Log;
 
@@ -225,6 +226,7 @@ class Helper {
         return null;
     }
 
+    // Validate a new house name.
     public static function validateHouseName($name) {
         // Check length.
         if (strlen($name) > env('MAX_HOUSE_NAME_LENGTH', 24)) {
@@ -240,5 +242,20 @@ class Helper {
         }
 
         return true;
+    }
+
+    // Return all territory ID's currently controlled by a house.
+    public static function findHouseterritoryIDs($houseID) {
+        return Territory::query()
+            ->select('territories.id')
+            ->join('occupations', 'occupations.territory_id', '=', 'territories.id')
+            ->join('users', 'users.id', '=', 'occupations.user_id')
+            ->where([
+                ['occupations.active', true],
+                ['users.house_id', $houseID]
+            ])
+            ->orderBy('territories.id')
+            ->pluck('id')
+            ->toArray();
     }
 }
