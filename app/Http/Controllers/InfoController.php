@@ -280,11 +280,13 @@ class InfoController extends Controller
         if ($user->house_id) {
             // Treat territories owned by your own house as your own.
             $territories = Territory::query()
+                ->select('territories.id')
                 ->join('occupations', 'occupations.territory_id', '=', 'territories.id')
                 ->join('users', 'users.id', '=', 'occupations.user_id')
                 ->whereHas('occupation', function (Builder $query) use ($user) {
                     $query->where('house_id', '=', $user->house_id);
                 })
+                ->where('occupations.active', '=', true)
                 ->with('borders.occupation.user', 'borderedTo.occupation.user')
                 ->get();
         } else {
@@ -316,8 +318,11 @@ class InfoController extends Controller
             foreach ($territories as $territory) {
                 $borderTerritories = $territory->borders->merge($territory->borderedTo);
                 foreach ($borderTerritories as $border) {
-                    $checker = $user->house_id ? $border->occupation->user->house_id : $border->occupation->user->id;
-                    $checkAgainst = $user->house_id || $user->id;
+                    if ($border->occupation) {
+                        // Careful to keep these defined in the flow they're used.
+                        $checker = $user->house_id ? $border->occupation->user->house_id : $border->occupation->user->id;
+                        $checkAgainst = $user->house_id ? $user->house_id : $user->id;
+                    }
 
                     // If you or your house don't currently occupy this border
                     if (!$border->occupation || $checker !== $checkAgainst) {
@@ -446,6 +451,8 @@ class InfoController extends Controller
                     $biggestCluster = $key;
                 }
             }
+
+            // TODO Logs wrong count per user when cut off by someone joining house.
 
             foreach ($clusters as $key => $cluster) {
                 if ($key !== $biggestCluster) {

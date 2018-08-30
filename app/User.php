@@ -134,6 +134,7 @@ class User extends Model
                 ->whereHas('occupation', function (Builder $query) use ($houseID) {
                     $query->where('house_id', '=', $houseID);
                 })
+                ->where('occupations.active', '=', true)
                 ->with('borders', 'borderedTo')
                 ->get();
         } else {
