@@ -259,7 +259,6 @@ class User extends Model
 
             $house->color = $color;
             if($house->save()) {
-
                 $event = new Event([
                     'user_id' => $this->id,
                     'text' => $eventText,
@@ -271,6 +270,35 @@ class User extends Model
             } else return false;
         } else {
             Log::info('Illegal house color change: ' . $house->name . ' -> ' . $colorIn);
+            return false;
+        }
+    }
+
+    // Change color of user's owned house.
+    public function setHouseName($name, $submittedAt) {
+        $house = House::find($this->house_id);
+
+        if (!$house || $house->owner_id !== $this->id) { // Not in a house or not the owner of their house.
+            return false;
+        }
+
+        if (Helper::validateHouseName($name)) {
+            $eventText = "<p><b style='color: $house->color'>$house->name</b>"
+                . " has changed their name to <b style='color: $house->color'>$name</b>.</p>";
+
+            $house->name = $name;
+            if($house->save()) {
+                $event = new Event([
+                    'user_id' => $this->id,
+                    'text' => $eventText,
+                    'timestamp' => $submittedAt
+                ]);
+                $event->save();
+
+                return true;
+            } else return false;
+        } else {
+            Log::info('Illegal house name change: ' . $house->name . ' -> ' . $name);
             return false;
         }
     }
