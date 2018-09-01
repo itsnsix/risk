@@ -31,6 +31,8 @@
                             For more control, go to your user page and hit the checkbox labeled <b>"Enable External API"</b>.
                             This will give you an input field for commands when you submit your images.
                             All commands are cAsE-iNsEnSiTiVe and given in the format of <b>COMMAND:VALUE</b>. Multiple commands can be sent at once with a <b>,</b> separating them i.e <b>MOVE:NORTH,COLOR:#23E4DF,UPDATE_AVATAR</b>
+
+                            <br /><br />If your commands seem to fail, check the command log for more info <a target="_blank" href="/log">here</a>.
                         </div>
 
                         <div class="info-section">
