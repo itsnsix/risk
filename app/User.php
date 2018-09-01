@@ -206,7 +206,9 @@ class User extends Model
         $existingHouse = House::find($this->house_id);
 
         // User is already in this house.
-        if ($existingHouse && $existingHouse->id === $houseID) return false;
+        if ($existingHouse &&
+            ($existingHouse->id === $houseID || strtoupper($existingHouse->name) === strtoupper($houseID))
+        ) return false;
 
         // User is leaving their current house.
         if (!$houseID || $existingHouse) {
