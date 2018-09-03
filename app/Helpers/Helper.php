@@ -63,7 +63,7 @@ class Helper {
             $user = new User();
             $user->api_user_id = $id;
             $user->name = $name;
-            $user->color = Helper::randomUniqueHexColor();
+            $user->color = Helper::randomUniqueHexColor('user');
             $user->save();
         }
 
@@ -75,12 +75,12 @@ class Helper {
     }
 
     // Find a new unique user color (as hex).
-    public static function randomUniqueHexColor() {
-        $color = Helper::validateColor('#' . dechex(rand(0x000000, 0xFFFFFF)));
+    public static function randomUniqueHexColor($mode) {
+        $color = Helper::validateColor('#' . dechex(rand(0x000000, 0xFFFFFF)), $mode);
 
         if (!$color) {
             // Inf. loop if more users than there are hex colors.
-            return Helper::randomUniqueHexColor();
+            return Helper::randomUniqueHexColor($mode);
         }
 
         return $color;
@@ -235,24 +235,26 @@ class Helper {
     }
 
     // Validate a string as a valid unique hex color.
-    public static function validateColor($colorIn) {
+    public static function validateColor($colorIn, $mode = null) {
         // #18424C ocean color.
         // #000000 border color.
         // #FFFFFF Unoccupied color.
-        // #99d9EA transport color.
+        // #99D9EA transport color.
 
         preg_match_all("/^#(?>[a-fA-F0-9]{6}){1,2}$/", $colorIn, $matches);
         if ($matches && count($matches[0]) > 0) {
             $color = strtoupper($matches[0][0]);
 
-            $duplicateUserColor = User::query()->where('color', $color)->exists();
-            $duplicateHouseColor = House::query()->where('color', $color)->exists();
+            $duplicate = false;
+            switch ($mode) {
+                case 'user': $duplicate = User::query()->where('color', $color)->exists(); break;
+                case 'house': $duplicate = House::query()->where('color', $color)->exists(); break;
+            }
 
-            if ($duplicateUserColor
-                || $duplicateHouseColor
+            if ($duplicate
                 || substr($color,0,1) !== '#'
                 || strlen($color) !== 7
-                || in_array($color, ['#18424C', '#000000', '#99d9EA', '#FFFFFF'])
+                || in_array($color, ['#18424C', '#000000', '#99D9EA', '#FFFFFF'])
             ) {
                 return null;
             }

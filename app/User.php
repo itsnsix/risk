@@ -19,7 +19,7 @@ class User extends Model
 
     // Change the user's territory color.
     public function changeColor($colorIn, $submittedAt) {
-        $color = Helper::validateColor($colorIn);
+        $color = Helper::validateColor($colorIn, 'user');
 
         if (!$color) {
             Log::info('Illegal color change: ' . $this->name . ' -> ' . $colorIn);
@@ -177,7 +177,7 @@ class User extends Model
             // Create the new house.
             $house = new House([
                 'owner_id' => $this->id,
-                'color' => Helper::randomUniqueHexColor(),
+                'color' => $this->color,
                 'name' => $name
             ]);
             $house->save();
@@ -252,7 +252,7 @@ class User extends Model
             return false;
         }
 
-        $color = Helper::validateColor($colorIn);
+        $color = Helper::validateColor($colorIn, 'house');
         if ($color) {
             $eventText = "<p><b style='color: $house->color'>$house->name</b>"
                 . " has changed their color to <b style='color: $color'>$color</b>.</p>";
