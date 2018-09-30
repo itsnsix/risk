@@ -16,3 +16,4 @@ yarn-error.log
 .env
 /public/mix-manifest.json
 .DS_STORE
+/public/log
