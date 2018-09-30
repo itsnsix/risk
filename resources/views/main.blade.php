@@ -25,7 +25,7 @@
     </head>
     <body>
         <div id="app">
-            <main-page></main-page>
+            <main-page map="{{ mix('/images/map.png') }}"></main-page>
         </div>
 
         <script src="{{ mix('js/vendor.js') }}"></script>
