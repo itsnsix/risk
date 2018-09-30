@@ -2,6 +2,12 @@
     <transition name="slide-menu">
         <div class="sidebar" v-show="show">
             <div class="sidebar-header">Day {{stats ? stats.day : '-'}}</div>
+            <div class="search-bar input-group">
+                <input type="text" class="form-control" placeholder="User or territory" aria-label="Search" @keyup.enter="search" v-model="query">
+                <div class="input-group-append">
+                    <button @click="search" class="btn btn-outline-secondary" type="button">Search</button>
+                </div>
+            </div>
             <div class="stat-container" v-if="stats">
                 <table class="table">
                     <tbody>
@@ -46,7 +52,7 @@
                     <div class="event-text" v-html="event.text"></div>
                 </div>
 
-                <button v-if="events.next_page_url" @click="loadMoreEvents" class="btn" :disabled="loadingMoreEvents">
+                <button v-if="events.next_page_url" @click="loadMoreEvents" class="paginator-btn btn" :disabled="loadingMoreEvents">
                     {{loadingMoreEvents ? 'Loading...' : 'Load more'}}
                 </button>
             </div>
@@ -68,6 +74,7 @@
             return {
                 events: {data: []},
                 stats: null,
+                query: '',
 
                 show: false,
                 loadingEvents: true,
@@ -128,6 +135,15 @@
                 }
 
                 return img;
+            },
+
+            search: function() {
+                if (isNaN(this.query)) {
+	                Bus.$emit('scroll-to-user', this.query);
+                } else {
+                	// If typed a number assume we're looking for a territory.
+	                Bus.$emit('scroll-to-territory', this.query);
+                }
             },
         }
     }

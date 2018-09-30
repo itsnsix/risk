@@ -91,6 +91,7 @@
                 });
 
 	    	Bus.$on('scroll-to-territory', this.scrollToTerritory);
+	    	Bus.$on('scroll-to-user', this.scrollToUser);
 	    	Bus.$on('close-popover', this.closePopover);
         },
 
@@ -103,8 +104,42 @@
                 this.showLabels = !this.showLabels;
             },
 
+		    scrollToUser: function(query) {
+			    let turnOffLabels = !this.showLabels;
+			    // TODO Find a way to avoid flickering labels when they're off.
+			    this.showLabels = true; // Needs to be visible in order to scroll to them.
+			    setTimeout(() => {
+				    let label;
+                    this.labels.some(l => { // Just return the first person matching the query.
+				    	if (l.territory.occupation.user.name.toUpperCase().indexOf(query.toUpperCase()) !== -1) {
+				    		label = l;
+				    		return true;
+                        }
+                    });
+                    if (label) {
+	                    let el = document.getElementById('territory-' + label.territory.id);
+	                    if (el) {
+		                    el.scrollIntoView({behavior: 'smooth', block: 'center', inline: 'center'});
+
+                            this.popover = {
+                                territory: label.territory,
+                                x: label.x - 125,
+                                y: label.y + 15
+                            };
+	                    } else {
+		                    console.log(`No label for territory ${label.territory.id}.`);
+                        }
+                    } else {
+	                    console.log(`No user matched '${query}'.`);
+                    }
+
+				    if (turnOffLabels) this.showLabels = false;
+			    });
+            },
+
 	        scrollToTerritory: function(territoryID) {
                 let turnOffLabels = !this.showLabels;
+                // TODO Find a way to avoid flickering labels when they're off.
                 this.showLabels = true; // Needs to be visible in order to scroll to them.
                 setTimeout(() => {
                     let el = document.getElementById('territory-' + territoryID);
@@ -112,7 +147,7 @@
                         el.scrollIntoView({behavior: 'smooth', block: 'center', inline: 'center'});
 
                         this.labels.forEach(l => {
-                            if (l.territory.id === territoryID) {
+                            if (l.territory.id === parseInt(territoryID)) {
                                 this.popover = {
                                     territory: l.territory,
                                     x: l.x - 125,
@@ -121,7 +156,7 @@
                             }
                         });
                     } else {
-                        console.log('No label for this territory.')
+                        console.log(`No label for territory ${territoryID}.`);
                     }
 
                     if (turnOffLabels) this.showLabels = false;

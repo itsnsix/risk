@@ -130,7 +130,7 @@ html, body, #app, .main-outer {
   display: flex;
   flex-direction: column;
 
-  .btn {
+  .paginator-btn {
     margin: 0 10px 10px 10px;
     width: 313px;
     max-width: 94%;
@@ -146,6 +146,12 @@ html, body, #app, .main-outer {
   .warning-label {
     text-align: center;
     margin: 10px;
+  }
+
+  .search-bar {
+    input, .btn-outline-secondary {
+      border-radius: 0;
+    }
   }
 }
 

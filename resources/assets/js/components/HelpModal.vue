@@ -3,7 +3,6 @@
         <div class="modal-mask" v-if="show">
             <div class="modal-wrapper">
                 <div class="modal-container">
-
                     <div class="modalheader">
                         <div>Whats and Hows</div>
                         <div class="close-modal" @click="close">X</div>
