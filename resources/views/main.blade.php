@@ -25,7 +25,7 @@
     </head>
     <body>
         <div id="app">
-            <main-page map="{{ mix('/images/map.png') }}"></main-page>
+            <main-page map="{{ mix('/images/map.png') }}" expand-limit="{{ env('EXPAND_LIMIT', 3) }}"></main-page>
         </div>
 
         <script src="{{ mix('js/vendor.js') }}"></script>

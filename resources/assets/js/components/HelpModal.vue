@@ -23,7 +23,7 @@
                         </div>
 
                         <div class="info-section">
-                            Your army only has enough strength to expand to a maximum of <b>3</b> new territories a day.
+                            Your army only has enough strength to expand to a maximum of <b>{{expandLimit}}</b> new territories a day.
                         </div>
 
                         <div class="info-section">
@@ -58,6 +58,10 @@
 
 <script>
     export default {
+        props: [
+            'expandLimit'
+        ],
+
         data() {
             return {
                 show: false

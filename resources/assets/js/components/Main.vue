@@ -33,7 +33,7 @@
 
             <sidebar></sidebar>
 
-            <help-modal></help-modal>
+            <help-modal :expand-limit="expandLimit"></help-modal>
         </div>
     </div>
 </template>
@@ -52,7 +52,8 @@
         },
 
         props:[
-        	'map'
+        	'map',
+            'expandLimit'
         ],
 
 	    data() {
