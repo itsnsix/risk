@@ -17,7 +17,7 @@
                                 <img class="king_icon" v-if="!index" src="/images/crown.png"/>
                                 <img class="highscore_avatar" :src="getUserAvatar(user)"/>
                             </div>
-                            <b class="highscore_name" :style="'color: ' + user.color">{{user.name}}</b>
+                            <b :title="user.name" class="highscore_name" :style="'color: ' + user.color">{{user.name}}</b>
                         </td>
                         <td>
                             <progress-line

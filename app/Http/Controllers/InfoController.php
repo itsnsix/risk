@@ -77,12 +77,13 @@ class InfoController extends Controller
         }
 
         $highscore = User::query()
-            ->selectRaw('users.*, COUNT(user_id) as occupations')
+            ->selectRaw('houses.*, owners.image, COUNT(users.house_id) as occupations')
             ->join('occupations', 'occupations.user_id', '=', 'users.id')
-            ->groupBy('user_id')
+            ->join('houses', 'houses.id', '=', 'users.house_id')
+            ->join('users as owners', 'houses.owner_id', '=', 'owners.id')
+            ->groupBy('users.house_id')
             ->where('active', true)
             ->orderBy('occupations', 'DESC')
-            ->limit(3)
             ->get();
 
         return response()->json([
