@@ -24,6 +24,10 @@ class CreateUsersTable extends Migration
 
             $table->foreign('house_id')->references('id')->on('houses');
         });
+
+        Schema::table('houses', function (Blueprint $table) {
+            $table->foreign('owner_id')->references('id')->on('users');
+        });
     }
 
     /**
